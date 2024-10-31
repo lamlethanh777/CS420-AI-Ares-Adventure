@@ -1,6 +1,34 @@
 import pygame
+from queue import PriorityQueue
+from queue import Queue
+import copy
+import time
+import tracemalloc
+import pygame_widgets
+from pygame_widgets.button import Button
+from pygame_widgets.dropdown import Dropdown
+import os
 
 
+class IOHandler:
+    def __init__(self):
+        self.input_file_name = None
+
+    def set_input_file_name(self, input_file_name):
+        self.input_file_name = input_file_name
+
+    def parse(self):
+        with open(self.input_file_name, "r") as f:
+            rock_weights = [int(weight) for weight in f.readline().strip().split()]
+            maze = [[ch for ch in line.replace("\n", "")] for line in f]
+            for line in maze:
+                print(line)
+        return maze, rock_weights
+
+    def write_metrics_result(self, result):
+        output_file_name = self.input_file_name.replace("input", "output")
+        with open(output_file_name, "w") as f:
+            f.write(result)
 
 
 class Visualizer:
@@ -17,11 +45,8 @@ class Visualizer:
     COLOR_OCCUPIED = (183, 224, 255)  # occupied goals
     COLOR_BUTTON = (0, 0, 255)  # Blue for buttons
 
-    def __init__(self, maze, moves, rock_weights):
-        self.original_maze = maze
-        self.moves = moves
-        self.rock_weights = rock_weights
-        self.reset_game()
+    def __init__(self):
+        # self.change_map(maze, rock_weights, moves)
 
         pygame.init()
         pygame.display.set_caption("Ares's Adventure")
@@ -31,12 +56,18 @@ class Visualizer:
         self.WIDTH = info.current_w // 2
         self.HEIGHT = info.current_h // 2
 
-        # Calculate new tile size
-        self.TILE_SIZE = min(self.WIDTH // len(maze[0]), self.HEIGHT // len(maze))
-
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         self.font = pygame.font.Font("freesansbold.ttf", 18)
         self.clock = pygame.time.Clock()
+
+    def change_map(self, maze, rock_weights, moves):
+        self.original_maze = maze
+        self.rock_weights = rock_weights
+        self.moves = moves
+        self.reset_game()
+
+        # Calculate new tile size
+        self.TILE_SIZE = min(self.WIDTH // len(maze[0]), self.HEIGHT // len(maze))
 
     def reset_game(self):
         self.maze = [list(row) for row in self.original_maze]
@@ -199,7 +230,9 @@ class Visualizer:
         self.draw_text("Reset", reset_rect, self.COLOR_TEXT, self.COLOR_BUTTON)
 
     def draw_weight_pushed(self):
-        weight_pushed_text = self.font.render(f"Weight pushed: {self.weight_pushed}", True, (255, 255, 255))
+        weight_pushed_text = self.font.render(
+            f"Weight pushed: {self.weight_pushed}", True, (255, 255, 255)
+        )
         self.screen.blit(weight_pushed_text, (50, self.HEIGHT - 120))
 
     def draw_step_count(self):
@@ -254,18 +287,453 @@ class Visualizer:
             pygame.display.flip()
             self.clock.tick(self.FPS * self.speed)
 
-# Example usage
-maze = [
-    " ###########",
-    "##         #",
-    "#          #",
-    "# $ $      #",
-    "#. @      .#",
-    "############",
-]
 
-moves = "uLulDrrRRRRRRurD"
-rock_weights = [1, 99]
+class State:
+    def __init__(self, maze, rock_weights, goals=None, player_pos=None, rocks_map=None):
+        self.maze = maze
+        self.rock_weights = rock_weights
+        self.goals = self.find_goals() if goals is None else goals
+        self.player_pos = self.find_player() if player_pos is None else player_pos
+        self.rocks_map = self.find_rocks() if rocks_map is None else rocks_map
 
-visualizer = Visualizer(maze, moves, rock_weights)
-visualizer.run()
+    def __str__(self):
+        return str(self.maze)
+
+    def find_goals(self):
+        goals = []
+        for row_idx, row in enumerate(self.maze):
+            for col_idx, _ in enumerate(row):
+                if self.maze[row_idx][col_idx] == ".":
+                    goals.append((row_idx, col_idx))
+
+        return goals
+
+    def find_player(self):
+        for row_idx, row in enumerate(self.maze):
+            for col_idx, _ in enumerate(row):
+                if self.maze[row_idx][col_idx] == "@":
+                    return row_idx, col_idx
+
+    def find_rocks(self):
+        rocks_map = {}
+        count = 0
+        for row_idx, row in enumerate(self.maze):
+            for col_idx, _ in enumerate(row):
+                if (
+                    self.maze[row_idx][col_idx] == "$"
+                    or self.maze[row_idx][col_idx] == "*"
+                ):
+                    rocks_map[(row_idx, col_idx)] = self.rock_weights[count]
+                    count += 1
+        return rocks_map
+
+    def __hash__(self):
+        maze_hash = hash(tuple(tuple(row) for row in self.maze))
+        rocks_map_hash = hash(frozenset(self.rocks_map.items()))
+        return hash((maze_hash, rocks_map_hash))
+
+    def __eq__(self, other):
+        if isinstance(other, State):
+            return self.maze == other.maze and self.rocks_map == other.rocks_map
+        return False
+
+    def copy(self):
+        return State(
+            copy.deepcopy(self.maze),
+            copy.deepcopy(self.rock_weights),
+            copy.deepcopy(self.goals),
+            copy.deepcopy(self.player_pos),
+            copy.deepcopy(self.rocks_map),
+        )
+
+
+class Node:
+    def __init__(self, state, parent, action, path_cost, weight_pushed, steps):
+        self.state = state
+        self.parent = parent
+        self.action = action
+        self.path_cost = path_cost
+        self.weight_pushed = weight_pushed
+        self.steps = steps
+
+    def __lt__(self, other):
+        return self.path_cost < other.path_cost
+
+    def __eq__(self, other):
+        return self.path_cost == other.path_cost
+
+    def __hash__(self):
+        return hash(self.state)
+
+
+class Problem:
+    actions = {"u": (-1, 0), "d": (1, 0), "l": (0, -1), "r": (0, 1)}
+
+    def __init__(self, initial: State):
+        self.initial = initial
+
+    def is_goal(self, state: State):
+        for x, y in state.rocks_map.keys():
+            if state.maze[x][y] == "$":
+                return False
+        return True
+
+    def is_initial(self, state):
+        return state.maze == self.initial.maze
+
+    def result(self, state: State, action: str):
+        """
+        Determines the resulting state and action after applying a given action to the current state.
+
+        Args:
+            state (object): The current state of the environment.
+            action (str): The action to be applied.
+
+        Returns:
+            tuple(State, str, int): A tuple containing the new state, the action taken, and the cost of moving. If the action results in moving a box, the action is returned in uppercase. If the action cannot be applied, returns (None, None).
+        """
+        return self.apply(state, self.actions[action])
+
+    def apply(self, state: State, movement: tuple):
+        """
+        Apply the movement to the given state and return the resulting state.
+
+        Args:
+            state (State): The current state of the game, including the maze layout and player position.
+            movement (List[int]): A list containing two integers representing the movement in the x and y directions.
+
+        Returns:
+            tuple(State, bool, int): A tuple containing the new state object, a boolean (indicating whether the new state is valid), and the cost of moving. If the movement is invalid, returns (None, False).
+        """
+        new_state = state.copy()
+        x, y = new_state.player_pos
+        dx, dy = movement
+        new_x, new_y = x + dx, y + dy
+        dest_cell = new_state.maze[new_x][new_y]
+        current_cell = new_state.maze[x][y]
+
+        def update_cell(x, y, value):
+            new_state.maze[x][y] = value
+
+        # Move to empty cell
+        if dest_cell in (" ", "."):
+            new_state.player_pos = (new_x, new_y)
+            update_cell(new_x, new_y, "@" if dest_cell == " " else "+")
+            update_cell(x, y, " " if current_cell == "@" else ".")
+            return new_state, False, 1
+        # Move to box
+        elif dest_cell in ("$", "*"):
+            next_x, next_y = new_x + dx, new_y + dy
+            next_cell = new_state.maze[next_x][next_y]
+            if next_cell in (" ", "."):
+                new_state.player_pos = (new_x, new_y)
+                update_cell(next_x, next_y, "$" if next_cell == " " else "*")
+                update_cell(new_x, new_y, "@" if dest_cell == "$" else "+")
+                update_cell(x, y, " " if current_cell == "@" else ".")
+                new_state.rocks_map[(next_x, next_y)] = new_state.rocks_map[
+                    (new_x, new_y)
+                ]
+                del new_state.rocks_map[(new_x, new_y)]
+                return new_state, True, new_state.rocks_map[(next_x, next_y)]
+
+        # Invalid move
+        return None, False, 0
+
+
+class Solver:
+    def __init__(self, algorithm_name=""):
+        self.algorithm_name = algorithm_name
+
+    def change_problem(self, problem: Problem):
+        self.problem = problem
+        self.steps = 0
+        self.total_weight = 0
+        self.nodes_generated = 0
+        self.start_time = None
+        self.end_time = None
+        self.memory_start = None
+        self.memory_end = None
+        self.result = None
+
+    def start_timer(self):
+        self.start_time = time.time()
+        tracemalloc.start()
+        self.memory_start = tracemalloc.get_traced_memory()[0]
+        print(self.start_time)
+
+    def stop_timer(self):
+        self.end_time = time.time()
+        self.memory_end = tracemalloc.get_traced_memory()[1]
+        tracemalloc.stop()
+
+    def solve(self, problem: Problem):
+        """Override this method in the child class to implement the logic of the algorithm."""
+        pass
+
+    def solve_and_measure(self, problem: Problem):
+        self.start_timer()
+        result = self.solve(problem)
+        self.result = "".join(result) if result is not None else None
+        self.stop_timer()
+        return self.result
+
+    def output_metrics(self):
+        if self.result is None:
+            return f"{self.algorithm_name}\nNo solution found."
+        
+        time_taken = (self.end_time - self.start_time) * 1000  # Convert to milliseconds
+        memory_used = (self.memory_end - self.memory_start) / (
+            1024 * 1024
+        )  # Convert to MB
+        return f"{self.algorithm_name}\nSteps: {self.steps}, Weight: {self.total_weight}, Node: {self.nodes_generated}, Time (ms): {time_taken:.2f}, Memory (MB): {memory_used:.2f}\n{self.result}"
+
+
+class AStarSolver(Solver):
+    def __init__(self):
+        super().__init__("A*")
+
+    def solve(self, problem: Problem):
+        super().solve(problem)
+
+        node = Node(self.problem.initial, None, None, 0, 0, 0)
+        frontier = PriorityQueue()
+        reached = {}
+        heuristic = {}
+        self.nodes_generated = 1
+
+        frontier.put(node)  # cost, node
+        reached[node.state] = 0  # cost of reaching the node
+        heuristic[node.state] = self.heuristic_cost(node.state)
+
+        while not frontier.empty():
+            node = frontier.get()
+            state = node.state
+
+            if self.problem.is_goal(state):
+                return self.trace_path(node)
+
+            for action in self.problem.actions:
+                child_state, box_moved, moving_cost = self.problem.result(
+                    node.state, action
+                )
+                if child_state is None:
+                    continue
+
+                is_child_reached_before = reached.get(child_state) is not None
+                if not is_child_reached_before or heuristic.get(child_state) is None:
+                    heuristic[child_state] = self.heuristic_cost(child_state)
+
+                child_cost = (
+                    node.path_cost
+                    - heuristic[state]
+                    + moving_cost
+                    + heuristic[child_state]
+                )
+
+                if not is_child_reached_before or reached[child_state] > child_cost:
+                    reached[child_state] = child_cost
+
+                    real_action = action
+                    weight_pushed = node.weight_pushed
+                    if box_moved:
+                        real_action = action.upper()
+                        weight_pushed += moving_cost
+
+                    child_node = Node(
+                        child_state,
+                        node,
+                        real_action,
+                        child_cost,
+                        weight_pushed,
+                        node.steps + 1,
+                    )
+                    frontier.put(child_node)
+                    self.nodes_generated += 1
+
+        return None
+
+    def heuristic_cost(self, state):
+        return 0  # UCS
+
+    def trace_path(self, node):
+        self.steps = node.steps
+        self.total_weight = node.weight_pushed
+        path = []
+        while node.parent:
+            path.append(node.action)
+            node = node.parent
+
+        return path[::-1]
+
+
+class DFSolver(Solver):
+    def __init__(self):
+        super().__init__("DFS")
+
+    # TODO: Logic of DFS algorithm is implemented here
+    def solve(self, problem: Problem):
+        super().solve(problem)
+        return None
+
+
+class BFSolver(Solver):
+    def __init__(self):
+        super().__init__("BFS")
+
+    # TODO: Logic of BFS algorithm is implemented here
+    def solve(self, problem: Problem):
+        super().solve(problem)
+        return None
+
+
+class UCSolver(Solver):
+    def __init__(self):
+        super().__init__("UCS")
+
+    # TODO: Logic of UCS algorithm is implemented here
+    def solve(self, problem: Problem):
+        super().solve(problem)
+        return None
+
+
+class App:
+    def __init__(self):
+        self.io_handler = IOHandler()
+        self.solvers = {
+            "A*": AStarSolver(),
+            "DFS": DFSolver(),
+            "BFS": BFSolver(),
+            "UCS": UCSolver(),
+        }
+        self.metric_results = {}
+        self.algorithm_results = {}
+        self.maps = {}
+        self.visualizer = Visualizer()
+        self.current_map_name = None
+        self.current_algorithm_name = None
+
+        self.prepare_maps()
+
+    def prepare_maps(self):
+        # Get all maps file with the prefix "input" in the folder
+        # Suppose the file name is input-01.txt, input-02.txt, etc.
+        for file in os.listdir():
+            if file.startswith("input") and file.endswith(".txt"):
+                self.io_handler.set_input_file_name(file)
+                self.maps[file] = self.io_handler.parse()
+
+    def visualize(self, map_name, algorithm_name):
+        self.choose_map(map_name)
+        self.choose_algorithm(algorithm_name)
+        if self.current_map_name is None or self.current_algorithm_name is None:
+            print("Please choose a map and an algorithm first!")
+            return
+
+        self.run_solvers(self.current_map_name)
+        if self.algorithm_results[self.current_algorithm_name] is None:
+            print("No solution found!")
+            return
+        self.visualizer.change_map(
+            self.maps[self.current_map_name][0],
+            self.maps[self.current_map_name][1],
+            self.algorithm_results[self.current_algorithm_name],
+        )
+        self.visualizer.run()
+
+    def run_solvers(self, map_name):
+        maze, rock_weights = self.maps[map_name]
+        initial_state = State(maze, rock_weights)
+        problem = Problem(initial_state)
+
+        for solver in self.solvers.values():
+            print(type(solver))
+            solver.change_problem(problem)
+            self.algorithm_results[solver.algorithm_name] = solver.solve_and_measure(
+                problem
+            )
+            self.metric_results[solver.algorithm_name] = solver.output_metrics()
+
+        self.io_handler.write_metrics_result("\n".join(self.metric_results.values()))
+
+    def preview_map(self, map_name):
+        pass
+
+    def choose_map(self, map_name):
+        self.current_map_name = map_name
+        self.preview_map(map_name)
+        print(f"Map {map_name} is chosen.")
+        pass
+
+    def choose_algorithm(self, algorithm_name):
+        self.current_algorithm_name = algorithm_name
+        print(f"Algorithm {algorithm_name} is chosen.")
+        pass
+
+    def prepare_ui(self):
+        self.window = pygame.display.set_mode((800, 600))
+        self.map_dropdown = Dropdown(
+            self.window,
+            0,
+            0,
+            80,
+            60,
+            name="Choose Map",
+            choices=[key for key in self.maps.keys()],
+            inactiveColour=(0, 255, 255),
+            pressedColour=(255, 0, 255),
+            hoverColour=(255, 255, 0),
+            textColour=(0, 0, 0),
+        )
+        self.algorithm_dropdown = Dropdown(
+            self.window,
+            100,
+            0,
+            80,
+            60,
+            name="Choose Algorithm",
+            choices=["A*", "DFS", "BFS", "UCS"],
+            inactiveColour=(0, 255, 255),
+            pressedColour=(255, 0, 255),
+            hoverColour=(255, 255, 0),
+            textColour=(0, 0, 0),
+        )
+        self.visualize_button = Button(
+            self.window,
+            200,
+            0,
+            80,
+            60,
+            text="Visualize",
+            fontSize=20,
+            margin=20,
+            inactiveColour=(0, 255, 255),
+            pressedColour=(255, 0, 255),
+            hoverColour=(255, 255, 0),
+            onClick=lambda: self.visualize(self.map_dropdown.getSelected(), self.algorithm_dropdown.getSelected()),
+        )
+
+    def run(self):
+        self.prepare_ui()
+
+        run = True
+        while run:
+            events = pygame.event.get()
+            for event in events:
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    run = False
+                    quit()
+
+            self.window.fill((255, 255, 255))
+
+            pygame_widgets.update(events)
+            pygame.display.update()
+
+
+def main():
+    app = App()
+    app.run()
+
+
+if __name__ == "__main__":
+    main()
