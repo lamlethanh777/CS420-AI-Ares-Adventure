@@ -1,5 +1,5 @@
 A*
-Steps: 4, Cost: 105, Node: 13, Time (ms): 5.00, Memory (MB): 0.02
+Steps: 4, Weight: 98, Node: 13, Time (ms): 5.13, Memory (MB): 0.02
 RlLL
 DFS
 No solution found.

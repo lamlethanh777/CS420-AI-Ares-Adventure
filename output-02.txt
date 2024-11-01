@@ -1,6 +1,6 @@
 A*
-Steps: 4, Weight: 101, Node: 13, Time (ms): 5.54, Memory (MB): 0.03
-RlLL
+Steps: 24, Cost: 429, Node: 37056, Time (ms): 24232.71, Memory (MB): 67.08
+lluRurrDrdLLLuRRRRRRRurD
 DFS
 No solution found.
 BFS

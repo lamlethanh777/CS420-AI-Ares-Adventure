@@ -7,6 +7,7 @@ import tracemalloc
 import pygame_widgets
 from pygame_widgets.button import Button
 from pygame_widgets.dropdown import Dropdown
+from pygame_widgets.slider import Slider
 import os
 
 
@@ -29,6 +30,7 @@ class IOHandler:
         output_file_name = self.input_file_name.replace("input", "output")
         with open(output_file_name, "w") as f:
             f.write(result)
+            print(f"Metrics result is written to {output_file_name}.")
 
 
 class Visualizer:
@@ -53,8 +55,8 @@ class Visualizer:
 
         # Get full screen size and set to half
         info = pygame.display.Info()
-        self.WIDTH = info.current_w // 2
-        self.HEIGHT = info.current_h // 2
+        self.WIDTH = info.current_w // 4
+        self.HEIGHT = info.current_h // 4
 
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         self.font = pygame.font.Font("freesansbold.ttf", 18)
@@ -83,7 +85,7 @@ class Visualizer:
         self.paused = False
         self.move_index = 0
         self.speed = 0.25  # Set initial speed to be slow
-        self.weight_pushed = 0
+        self.cost = 0
         self.steps = 0
         self.rocks_map = {}
         count = 0
@@ -185,7 +187,7 @@ class Visualizer:
                 self.maze[x][y] = " " if self.maze[x][y] == "@" else "."
                 weight_index = self.get_rock_weight(new_x, new_y)
                 if weight_index is not None:
-                    self.weight_pushed += weight_index
+                    self.cost += weight_index + 1
                 self.steps += 1
                 self.rocks_map[(next_x, next_y)] = self.rocks_map[(new_x, new_y)]
                 del self.rocks_map[(new_x, new_y)]
@@ -219,21 +221,15 @@ class Visualizer:
         reset_rect = pygame.draw.rect(
             self.screen, self.COLOR_BUTTON, (350, self.HEIGHT - 80, 100, 50)
         )
-        # start_text = self.font.render("Start", True, (255, 255, 255))
-        # pause_text = self.font.render("Pause", True, (255, 255, 255))
-        # reset_text = self.font.render("Reset", True, (255, 255, 255))
-        # self.screen.blit(start_text, (75, self.HEIGHT - 70))
-        # self.screen.blit(pause_text, (225, self.HEIGHT - 70))
-        # self.screen.blit(reset_text, (375, self.HEIGHT - 70))
         self.draw_text("Start", start_rect, self.COLOR_TEXT, self.COLOR_BUTTON)
         self.draw_text("Pause", pause_rect, self.COLOR_TEXT, self.COLOR_BUTTON)
         self.draw_text("Reset", reset_rect, self.COLOR_TEXT, self.COLOR_BUTTON)
 
-    def draw_weight_pushed(self):
-        weight_pushed_text = self.font.render(
-            f"Weight pushed: {self.weight_pushed}", True, (255, 255, 255)
+    def draw_cost(self):
+        cost_text = self.font.render(
+            f"Cost: {self.cost}", True, (255, 255, 255)
         )
-        self.screen.blit(weight_pushed_text, (50, self.HEIGHT - 120))
+        self.screen.blit(cost_text, (50, self.HEIGHT - 120))
 
     def draw_step_count(self):
         steps_count_text = self.font.render(
@@ -282,7 +278,7 @@ class Visualizer:
             self.screen.fill(self.COLOR_BG)
             self.draw_maze()
             self.draw_buttons()
-            self.draw_weight_pushed()
+            self.draw_cost()
             self.draw_step_count()
             pygame.display.flip()
             self.clock.tick(self.FPS * self.speed)
@@ -434,7 +430,7 @@ class Problem:
                     (new_x, new_y)
                 ]
                 del new_state.rocks_map[(new_x, new_y)]
-                return new_state, True, new_state.rocks_map[(next_x, next_y)]
+                return new_state, True, new_state.rocks_map[(next_x, next_y)] + 1
 
         # Invalid move
         return None, False, 0
@@ -447,7 +443,8 @@ class Solver:
     def change_problem(self, problem: Problem):
         self.problem = problem
         self.steps = 0
-        self.total_weight = 0
+        self.total_weight_pushed = 0
+        self.total_cost = 0
         self.nodes_generated = 0
         self.start_time = None
         self.end_time = None
@@ -480,12 +477,12 @@ class Solver:
     def output_metrics(self):
         if self.result is None:
             return f"{self.algorithm_name}\nNo solution found."
-        
+
         time_taken = (self.end_time - self.start_time) * 1000  # Convert to milliseconds
         memory_used = (self.memory_end - self.memory_start) / (
             1024 * 1024
         )  # Convert to MB
-        return f"{self.algorithm_name}\nSteps: {self.steps}, Weight: {self.total_weight}, Node: {self.nodes_generated}, Time (ms): {time_taken:.2f}, Memory (MB): {memory_used:.2f}\n{self.result}"
+        return f"{self.algorithm_name}\nSteps: {self.steps}, Cost: {self.total_cost}, Node: {self.nodes_generated}, Time (ms): {time_taken:.2f}, Memory (MB): {memory_used:.2f}\n{self.result}"
 
 
 class AStarSolver(Solver):
@@ -520,31 +517,24 @@ class AStarSolver(Solver):
                     continue
 
                 is_child_reached_before = reached.get(child_state) is not None
-                if not is_child_reached_before or heuristic.get(child_state) is None:
+                if not is_child_reached_before:
                     heuristic[child_state] = self.heuristic_cost(child_state)
 
-                child_cost = (
-                    node.path_cost
-                    - heuristic[state]
-                    + moving_cost
-                    + heuristic[child_state]
-                )
+                child_cost = node.path_cost + moving_cost + heuristic[child_state]
 
                 if not is_child_reached_before or reached[child_state] > child_cost:
                     reached[child_state] = child_cost
 
                     real_action = action
-                    weight_pushed = node.weight_pushed
                     if box_moved:
                         real_action = action.upper()
-                        weight_pushed += moving_cost
 
                     child_node = Node(
                         child_state,
                         node,
                         real_action,
                         child_cost,
-                        weight_pushed,
+                        node.weight_pushed + moving_cost - 1,
                         node.steps + 1,
                     )
                     frontier.put(child_node)
@@ -557,7 +547,8 @@ class AStarSolver(Solver):
 
     def trace_path(self, node):
         self.steps = node.steps
-        self.total_weight = node.weight_pushed
+        self.total_weight_pushed = node.weight_pushed
+        self.total_cost = node.path_cost
         path = []
         while node.parent:
             path.append(node.action)
@@ -581,6 +572,7 @@ class BFSolver(Solver):
         super().__init__("BFS")
 
     # TODO: Logic of BFS algorithm is implemented here
+    # Hint: You can use the `queue.Queue` class to implement the frontier
     def solve(self, problem: Problem):
         super().solve(problem)
         return None
@@ -597,6 +589,14 @@ class UCSolver(Solver):
 
 
 class App:
+    BUTTON_WIDTH = 120
+    BUTTON_HEIGHT = 60
+    DROPDOWN_WIDTH = 120
+    DROPDOWN_HEIGHT = 60
+    INACTIVE_COLOR = (0, 255, 255)
+    PRESSED_COLOR = (255, 0, 255)
+    HOVER_COLOR = (255, 255, 0)
+
     def __init__(self):
         self.io_handler = IOHandler()
         self.solvers = {
@@ -613,6 +613,7 @@ class App:
         self.current_algorithm_name = None
 
         self.prepare_maps()
+        self.prepare_ui()
 
     def prepare_maps(self):
         # Get all maps file with the prefix "input" in the folder
@@ -621,6 +622,125 @@ class App:
             if file.startswith("input") and file.endswith(".txt"):
                 self.io_handler.set_input_file_name(file)
                 self.maps[file] = self.io_handler.parse()
+
+    def prepare_ui(self):
+        pygame.init()
+        pygame.display.set_caption("Ares's Adventure")
+
+        # Get full screen size and set to half
+        info = pygame.display.Info()
+        self.WIDTH = info.current_w // 1
+        self.HEIGHT = info.current_h // 1
+
+        self.font = pygame.font.Font("freesansbold.ttf", 18)
+        self.clock = pygame.time.Clock()
+        self.window = pygame.display.set_mode((800, 600))
+        self.map_dropdown = Dropdown(
+            self.window,
+            10,
+            10,
+            self.DROPDOWN_WIDTH,
+            self.DROPDOWN_HEIGHT,
+            name="Map",
+            choices=[key for key in self.maps.keys()],
+            borderRadius=20,
+            fontSize=20,
+            inactiveColour=(0, 255, 255),
+            pressedColour=(255, 0, 255),
+            hoverColour=(255, 255, 0),
+        )
+        self.algorithm_dropdown = Dropdown(
+            self.window,
+            self.map_dropdown._x + self.DROPDOWN_WIDTH + 10,
+            self.map_dropdown._y,
+            self.DROPDOWN_WIDTH,
+            self.DROPDOWN_HEIGHT,
+            name="Algorithm",
+            choices=["A*", "DFS", "BFS", "UCS"],
+            borderRadius=20,
+            fontSize=20,
+            inactiveColour=(0, 255, 255),
+            pressedColour=(255, 0, 255),
+            hoverColour=(255, 255, 0),
+        )
+        self.visualize_button = Button(
+            self.window,
+            self.algorithm_dropdown._x + self.DROPDOWN_WIDTH + 10,
+            self.algorithm_dropdown._y,
+            self.BUTTON_WIDTH,
+            self.BUTTON_HEIGHT,
+            text="Visualize",
+            fontSize=20,
+            margin=20,
+            inactiveColour=(0, 255, 255),
+            pressedColour=(255, 0, 255),
+            hoverColour=(255, 255, 0),
+            radius=20,
+            onClick=lambda: self.visualize(
+                self.map_dropdown.getSelected(), self.algorithm_dropdown.getSelected()
+            ),
+        )
+        self.start_button = Button(
+            self.window,
+            10,
+            self.HEIGHT - 10,
+            self.BUTTON_WIDTH,
+            self.BUTTON_HEIGHT,
+            text="Start",
+            fontSize=20,
+            margin=20,
+            inactiveColour=(0, 255, 255),
+            pressedColour=(255, 0, 255),
+            hoverColour=(255, 255, 0),
+            radius=20,
+        )
+        self.pause_button = Button(
+            self.window,
+            self.start_button._x + self.BUTTON_WIDTH + 10,
+            self.start_button._y,
+            self.BUTTON_WIDTH,
+            self.BUTTON_HEIGHT,
+            text="Pause",
+            fontSize=20,
+            margin=20,
+            inactiveColour=(0, 255, 255),
+            pressedColour=(255, 0, 255),
+            hoverColour=(255, 255, 0),
+            radius=20,
+        )
+        self.reset_button = Button(
+            self.window,
+            self.pause_button._x + self.BUTTON_WIDTH + 10,
+            self.pause_button._y,
+            self.BUTTON_WIDTH,
+            self.BUTTON_HEIGHT,
+            text="Reset",
+            fontSize=20,
+            margin=20,
+            inactiveColour=(0, 255, 255),
+            pressedColour=(255, 0, 255),
+            hoverColour=(255, 255, 0),
+            radius=20,
+        )
+        self.speed_slider = Slider(
+            self.window,
+            600,
+            0,
+            200,
+            60,
+            min=0,
+            max=1,
+            step=0.1,
+            initial=0.5,
+            handleRadius=20,
+            handleColour=(0, 255, 255),
+            handleOutline=(255, 0, 255),
+            handleSize=20,
+            barColour=(255, 255, 0),
+            barOutline=(0, 0, 0),
+            barSize=20,
+            onSlide=lambda: self.update_speed(self.spped_slider.getValue()),
+        )
 
     def visualize(self, map_name, algorithm_name):
         self.choose_map(map_name)
@@ -653,6 +773,7 @@ class App:
             )
             self.metric_results[solver.algorithm_name] = solver.output_metrics()
 
+        print(self.metric_results)
         self.io_handler.write_metrics_result("\n".join(self.metric_results.values()))
 
     def preview_map(self, map_name):
@@ -661,6 +782,7 @@ class App:
     def choose_map(self, map_name):
         self.current_map_name = map_name
         self.preview_map(map_name)
+        self.io_handler.set_input_file_name(map_name)
         print(f"Map {map_name} is chosen.")
         pass
 
@@ -669,52 +791,7 @@ class App:
         print(f"Algorithm {algorithm_name} is chosen.")
         pass
 
-    def prepare_ui(self):
-        self.window = pygame.display.set_mode((800, 600))
-        self.map_dropdown = Dropdown(
-            self.window,
-            0,
-            0,
-            80,
-            60,
-            name="Choose Map",
-            choices=[key for key in self.maps.keys()],
-            inactiveColour=(0, 255, 255),
-            pressedColour=(255, 0, 255),
-            hoverColour=(255, 255, 0),
-            textColour=(0, 0, 0),
-        )
-        self.algorithm_dropdown = Dropdown(
-            self.window,
-            100,
-            0,
-            80,
-            60,
-            name="Choose Algorithm",
-            choices=["A*", "DFS", "BFS", "UCS"],
-            inactiveColour=(0, 255, 255),
-            pressedColour=(255, 0, 255),
-            hoverColour=(255, 255, 0),
-            textColour=(0, 0, 0),
-        )
-        self.visualize_button = Button(
-            self.window,
-            200,
-            0,
-            80,
-            60,
-            text="Visualize",
-            fontSize=20,
-            margin=20,
-            inactiveColour=(0, 255, 255),
-            pressedColour=(255, 0, 255),
-            hoverColour=(255, 255, 0),
-            onClick=lambda: self.visualize(self.map_dropdown.getSelected(), self.algorithm_dropdown.getSelected()),
-        )
-
     def run(self):
-        self.prepare_ui()
-
         run = True
         while run:
             events = pygame.event.get()
@@ -731,6 +808,7 @@ class App:
 
 
 def main():
+    os.environ["SDL_VIDEO_CENTERED"] = "1"
     app = App()
     app.run()
 
