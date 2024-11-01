@@ -1,6 +1,7 @@
 import pygame
 from queue import PriorityQueue
 from queue import Queue
+import heapq
 import copy
 import time
 import tracemalloc
@@ -175,6 +176,7 @@ class Visualizer:
             self.maze[new_x][new_y] = "@" if target_tile == " " else "+"
             self.maze[x][y] = " " if self.maze[x][y] == "@" else "."
             self.steps += 1
+            self.cost += 1
             self.player_pos = (new_x, new_y)
         elif target_tile == "$" or target_tile == "*":
             next_x, next_y = new_x + dx, new_y + dy
@@ -285,24 +287,14 @@ class Visualizer:
 
 
 class State:
-    def __init__(self, maze, rock_weights, goals=None, player_pos=None, rocks_map=None):
+    def __init__(self, maze, rock_weights, player_pos=None, rocks_map=None):
         self.maze = maze
         self.rock_weights = rock_weights
-        self.goals = self.find_goals() if goals is None else goals
         self.player_pos = self.find_player() if player_pos is None else player_pos
         self.rocks_map = self.find_rocks() if rocks_map is None else rocks_map
 
     def __str__(self):
         return str(self.maze)
-
-    def find_goals(self):
-        goals = []
-        for row_idx, row in enumerate(self.maze):
-            for col_idx, _ in enumerate(row):
-                if self.maze[row_idx][col_idx] == ".":
-                    goals.append((row_idx, col_idx))
-
-        return goals
 
     def find_player(self):
         for row_idx, row in enumerate(self.maze):
@@ -325,8 +317,8 @@ class State:
 
     def __hash__(self):
         maze_hash = hash(tuple(tuple(row) for row in self.maze))
-        rocks_map_hash = hash(frozenset(self.rocks_map.items()))
-        return hash((maze_hash, rocks_map_hash))
+        rocks_map = tuple(sorted(self.rocks_map.items()))
+        return hash((maze_hash, rocks_map))
 
     def __eq__(self, other):
         if isinstance(other, State):
@@ -336,8 +328,7 @@ class State:
     def copy(self):
         return State(
             copy.deepcopy(self.maze),
-            copy.deepcopy(self.rock_weights),
-            copy.deepcopy(self.goals),
+            self.rock_weights,
             copy.deepcopy(self.player_pos),
             copy.deepcopy(self.rocks_map),
         )
@@ -363,7 +354,8 @@ class Node:
 
 
 class Problem:
-    actions = {"u": (-1, 0), "d": (1, 0), "l": (0, -1), "r": (0, 1)}
+    movement = {"u": (-1, 0), "d": (1, 0), "l": (0, -1), "r": (0, 1)}
+    actions = {"u", "d", "l", "r"}
 
     def __init__(self, initial: State):
         self.initial = initial
@@ -401,7 +393,10 @@ class Problem:
         Returns:
             tuple(State, bool, int): A tuple containing the new state object, a boolean (indicating whether the new state is valid), and the cost of moving. If the movement is invalid, returns (None, False).
         """
+        # s = time.time()
         new_state = state.copy()
+        # e = time.time()
+        # print("copy", (e - s) * 1000)
         x, y = new_state.player_pos
         dx, dy = movement
         new_x, new_y = x + dx, y + dy
@@ -434,6 +429,23 @@ class Problem:
 
         # Invalid move
         return None, False, 0
+    
+    # def expand(self, state: State):
+    #     """
+    #     Generate all possible successor states from the given state.
+
+    #     Args:
+    #         state (State): The current state of the environment.
+
+    #     Returns:
+    #         list(State): A list of all possible successor states.
+    #     """
+    #     successors = []
+    #     for action in self.actions:
+    #         new_state, is_valid, cost = self.result(state, action)
+    #         if is_valid:
+    #             successors.append((new_state, action, cost))
+    #     return successors
 
 
 class Solver:
@@ -478,10 +490,8 @@ class Solver:
         if self.result is None:
             return f"{self.algorithm_name}\nNo solution found."
 
-        time_taken = (self.end_time - self.start_time) * 1000  # Convert to milliseconds
-        memory_used = (self.memory_end - self.memory_start) / (
-            1024 * 1024
-        )  # Convert to MB
+        time_taken = (self.end_time - self.start_time) * 1000
+        memory_used = (self.memory_end - self.memory_start) / (1024 * 1024)
         return f"{self.algorithm_name}\nSteps: {self.steps}, Cost: {self.total_cost}, Node: {self.nodes_generated}, Time (ms): {time_taken:.2f}, Memory (MB): {memory_used:.2f}\n{self.result}"
 
 
@@ -493,25 +503,29 @@ class AStarSolver(Solver):
         super().solve(problem)
 
         node = Node(self.problem.initial, None, None, 0, 0, 0)
-        frontier = PriorityQueue()
+        # frontier = PriorityQueue()
+        frontier = []
         reached = {}
         heuristic = {}
         self.nodes_generated = 1
 
-        frontier.put(node)  # cost, node
+        # frontier.put(node)  # cost, node
+        heapq.heappush(frontier, (node.path_cost, node))
         reached[node.state] = 0  # cost of reaching the node
         heuristic[node.state] = self.heuristic_cost(node.state)
 
-        while not frontier.empty():
-            node = frontier.get()
+        # while not frontier.empty():
+        while frontier:
+            # node = frontier.get()
+            node = heapq.heappop(frontier)[1]
             state = node.state
 
             if self.problem.is_goal(state):
                 return self.trace_path(node)
 
             for action in self.problem.actions:
-                child_state, box_moved, moving_cost = self.problem.result(
-                    node.state, action
+                child_state, box_moved, moving_cost = self.problem.apply(
+                    node.state, problem.movement[action]
                 )
                 if child_state is None:
                     continue
@@ -537,7 +551,8 @@ class AStarSolver(Solver):
                         node.weight_pushed + moving_cost - 1,
                         node.steps + 1,
                     )
-                    frontier.put(child_node)
+                    # frontier.put(child_node)
+                    heapq.heappush(frontier, (child_node.path_cost, child_node))
                     self.nodes_generated += 1
 
         return None
