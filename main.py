@@ -1,6 +1,4 @@
 import pygame
-from queue import PriorityQueue
-from queue import Queue
 import heapq
 import copy
 import time
@@ -228,9 +226,7 @@ class Visualizer:
         self.draw_text("Reset", reset_rect, self.COLOR_TEXT, self.COLOR_BUTTON)
 
     def draw_cost(self):
-        cost_text = self.font.render(
-            f"Cost: {self.cost}", True, (255, 255, 255)
-        )
+        cost_text = self.font.render(f"Cost: {self.cost}", True, (255, 255, 255))
         self.screen.blit(cost_text, (50, self.HEIGHT - 120))
 
     def draw_step_count(self):
@@ -287,11 +283,15 @@ class Visualizer:
 
 
 class State:
-    def __init__(self, maze, rock_weights, player_pos=None, rocks_map=None):
+    def __init__(
+        self, maze, rock_weights=None, player_pos=None, rocks_map=None, goals=None
+    ):
         self.maze = maze
-        self.rock_weights = rock_weights
         self.player_pos = self.find_player() if player_pos is None else player_pos
-        self.rocks_map = self.find_rocks() if rocks_map is None else rocks_map
+        self.rocks_map = (
+            self.find_rocks(rock_weights) if rocks_map is None else rocks_map
+        )
+        self.goals = self.find_goals() if goals is None else goals
 
     def __str__(self):
         return str(self.maze)
@@ -302,7 +302,7 @@ class State:
                 if self.maze[row_idx][col_idx] == "@":
                     return row_idx, col_idx
 
-    def find_rocks(self):
+    def find_rocks(self, rock_weights):
         rocks_map = {}
         count = 0
         for row_idx, row in enumerate(self.maze):
@@ -311,27 +311,36 @@ class State:
                     self.maze[row_idx][col_idx] == "$"
                     or self.maze[row_idx][col_idx] == "*"
                 ):
-                    rocks_map[(row_idx, col_idx)] = self.rock_weights[count]
+                    rocks_map[(row_idx, col_idx)] = rock_weights[count]
                     count += 1
         return rocks_map
 
+    def find_goals(self):
+        goals = []
+        for row_idx, row in enumerate(self.maze):
+            for col_idx, _ in enumerate(row):
+                if self.maze[row_idx][col_idx] == ".":
+                    goals.append((row_idx, col_idx))
+        return goals
+
     def __hash__(self):
-        maze_hash = hash(tuple(tuple(row) for row in self.maze))
+        player_pos = self.player_pos
         rocks_map = tuple(sorted(self.rocks_map.items()))
-        return hash((maze_hash, rocks_map))
+        return hash((player_pos, rocks_map))
 
     def __eq__(self, other):
         if isinstance(other, State):
-            return self.maze == other.maze and self.rocks_map == other.rocks_map
+            return (
+                self.player_pos == other.player_pos
+                and self.rocks_map == other.rocks_map
+            )
         return False
 
     def copy(self):
-        return State(
-            copy.deepcopy(self.maze),
-            self.rock_weights,
-            copy.deepcopy(self.player_pos),
-            copy.deepcopy(self.rocks_map),
-        )
+        new_player_pos = (self.player_pos[0], self.player_pos[1])
+        new_rocks_map = {k: v for k, v in self.rocks_map.items()}
+
+        return State(self.maze, None, new_player_pos, new_rocks_map, self.goals)
 
 
 class Node:
@@ -343,14 +352,14 @@ class Node:
         self.weight_pushed = weight_pushed
         self.steps = steps
 
+    def __hash__(self):
+        return hash(self.state)
+
     def __lt__(self, other):
         return self.path_cost < other.path_cost
 
     def __eq__(self, other):
-        return self.path_cost == other.path_cost
-
-    def __hash__(self):
-        return hash(self.state)
+        return self.state == other.state
 
 
 class Problem:
@@ -361,8 +370,8 @@ class Problem:
         self.initial = initial
 
     def is_goal(self, state: State):
-        for x, y in state.rocks_map.keys():
-            if state.maze[x][y] == "$":
+        for goal in state.goals:
+            if goal not in state.rocks_map:
                 return False
         return True
 
@@ -400,52 +409,24 @@ class Problem:
         x, y = new_state.player_pos
         dx, dy = movement
         new_x, new_y = x + dx, y + dy
-        dest_cell = new_state.maze[new_x][new_y]
-        current_cell = new_state.maze[x][y]
 
-        def update_cell(x, y, value):
-            new_state.maze[x][y] = value
-
-        # Move to empty cell
-        if dest_cell in (" ", "."):
-            new_state.player_pos = (new_x, new_y)
-            update_cell(new_x, new_y, "@" if dest_cell == " " else "+")
-            update_cell(x, y, " " if current_cell == "@" else ".")
-            return new_state, False, 1
-        # Move to box
-        elif dest_cell in ("$", "*"):
+        if (new_x, new_y) in new_state.rocks_map:
             next_x, next_y = new_x + dx, new_y + dy
-            next_cell = new_state.maze[next_x][next_y]
-            if next_cell in (" ", "."):
+            if (next_x, next_y) not in new_state.rocks_map and new_state.maze[next_x][
+                next_y
+            ] != "#":
                 new_state.player_pos = (new_x, new_y)
-                update_cell(next_x, next_y, "$" if next_cell == " " else "*")
-                update_cell(new_x, new_y, "@" if dest_cell == "$" else "+")
-                update_cell(x, y, " " if current_cell == "@" else ".")
                 new_state.rocks_map[(next_x, next_y)] = new_state.rocks_map[
                     (new_x, new_y)
                 ]
                 del new_state.rocks_map[(new_x, new_y)]
                 return new_state, True, new_state.rocks_map[(next_x, next_y)] + 1
+        elif new_state.maze[new_x][new_y] != "#":
+            new_state.player_pos = (new_x, new_y)
+            return new_state, False, 1
 
         # Invalid move
         return None, False, 0
-    
-    # def expand(self, state: State):
-    #     """
-    #     Generate all possible successor states from the given state.
-
-    #     Args:
-    #         state (State): The current state of the environment.
-
-    #     Returns:
-    #         list(State): A list of all possible successor states.
-    #     """
-    #     successors = []
-    #     for action in self.actions:
-    #         new_state, is_valid, cost = self.result(state, action)
-    #         if is_valid:
-    #             successors.append((new_state, action, cost))
-    #     return successors
 
 
 class Solver:
@@ -503,21 +484,17 @@ class AStarSolver(Solver):
         super().solve(problem)
 
         node = Node(self.problem.initial, None, None, 0, 0, 0)
-        # frontier = PriorityQueue()
         frontier = []
-        reached = {}
+        reached = {}  # combined cost of reaching the node and heuristic cost
         heuristic = {}
         self.nodes_generated = 1
 
-        # frontier.put(node)  # cost, node
-        heapq.heappush(frontier, (node.path_cost, node))
-        reached[node.state] = 0  # cost of reaching the node
+        heapq.heappush(frontier, (0, node))
         heuristic[node.state] = self.heuristic_cost(node.state)
+        reached[node.state] = heuristic[node.state]
 
-        # while not frontier.empty():
         while frontier:
-            # node = frontier.get()
-            node = heapq.heappop(frontier)[1]
+            _, node = heapq.heappop(frontier)
             state = node.state
 
             if self.problem.is_goal(state):
@@ -530,29 +507,30 @@ class AStarSolver(Solver):
                 if child_state is None:
                     continue
 
-                is_child_reached_before = reached.get(child_state) is not None
+                is_child_reached_before = child_state in reached
                 if not is_child_reached_before:
                     heuristic[child_state] = self.heuristic_cost(child_state)
 
-                child_cost = node.path_cost + moving_cost + heuristic[child_state]
+                child_combined_cost = (
+                    node.path_cost + moving_cost + heuristic[child_state]
+                )
 
-                if not is_child_reached_before or reached[child_state] > child_cost:
-                    reached[child_state] = child_cost
-
-                    real_action = action
-                    if box_moved:
-                        real_action = action.upper()
+                if (
+                    not is_child_reached_before
+                    or reached[child_state] > child_combined_cost
+                ):
+                    reached[child_state] = child_combined_cost
 
                     child_node = Node(
                         child_state,
                         node,
-                        real_action,
-                        child_cost,
+                        action.upper() if box_moved else action,
+                        child_combined_cost - heuristic[child_state],
                         node.weight_pushed + moving_cost - 1,
                         node.steps + 1,
                     )
                     # frontier.put(child_node)
-                    heapq.heappush(frontier, (child_node.path_cost, child_node))
+                    heapq.heappush(frontier, (child_combined_cost, child_node))
                     self.nodes_generated += 1
 
         return None
@@ -587,7 +565,7 @@ class BFSolver(Solver):
         super().__init__("BFS")
 
     # TODO: Logic of BFS algorithm is implemented here
-    # Hint: You can use the `queue.Queue` class to implement the frontier
+    # Hint: You should use the heapq to implement the frontier
     def solve(self, problem: Problem):
         super().solve(problem)
         return None

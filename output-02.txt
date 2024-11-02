@@ -1,5 +1,5 @@
 A*
-Steps: 24, Cost: 429, Node: 37263, Time (ms): 19750.26, Memory (MB): 60.95
+Steps: 24, Cost: 429, Node: 37294, Time (ms): 2356.00, Memory (MB): 17.50
 lluRurrDrdLLLuRRRRRRRurD
 DFS
 No solution found.
