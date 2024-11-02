@@ -18,6 +18,7 @@ class IOHandler:
         self.input_file_name = input_file_name
 
     def parse(self):
+        print(f"Reading map from {self.input_file_name}...")
         with open(self.input_file_name, "r") as f:
             rock_weights = [int(weight) for weight in f.readline().strip().split()]
             maze = [[ch for ch in line.replace("\n", "")] for line in f]
@@ -449,7 +450,6 @@ class Solver:
         self.start_time = time.time()
         tracemalloc.start()
         self.memory_start = tracemalloc.get_traced_memory()[0]
-        print(self.start_time)
 
     def stop_timer(self):
         self.end_time = time.time()
@@ -479,6 +479,8 @@ class Solver:
 class AStarSolver(Solver):
     def __init__(self):
         super().__init__("A*")
+        self.heuristic_measure = 0
+        self.heuristic_start = 0
 
     def solve(self, problem: Problem):
         super().solve(problem)
@@ -509,7 +511,9 @@ class AStarSolver(Solver):
 
                 is_child_reached_before = child_state in reached
                 if not is_child_reached_before:
+                    self.heuristic_start = time.time()
                     heuristic[child_state] = self.heuristic_cost(child_state)
+                    self.heuristic_measure += time.time() - self.heuristic_start
 
                 child_combined_cost = (
                     node.path_cost + moving_cost + heuristic[child_state]
@@ -536,7 +540,36 @@ class AStarSolver(Solver):
         return None
 
     def heuristic_cost(self, state):
-        return 0  # UCS
+        """
+        Calculate the heuristic cost for the given state.
+
+        Args:
+            state (State): The current state of the game, including the maze layout and positions of rocks and goals.
+
+        Returns:
+            int: The heuristic cost based on the distance of rocks to their closest goals, weighted by the rock weights.
+        """
+        heuristic = 0
+        goals = state.goals
+        rocks = sorted(state.rocks_map.items(), key=lambda x: x[1], reverse=True)
+        used_goals = set()
+
+        for rock_pos, rock_weight in rocks:
+            min_distance = float('inf')
+            closest_goal = None
+
+            for goal in goals:
+                if goal not in used_goals:
+                    distance = abs(rock_pos[0] - goal[0]) + abs(rock_pos[1] - goal[1])
+                    if distance < min_distance:
+                        min_distance = distance
+                        closest_goal = goal
+
+            if closest_goal:
+                used_goals.add(closest_goal)
+                heuristic += min_distance * rock_weight
+
+        return heuristic
 
     def trace_path(self, node):
         self.steps = node.steps
@@ -546,6 +579,8 @@ class AStarSolver(Solver):
         while node.parent:
             path.append(node.action)
             node = node.parent
+
+        print("Heuristic calculation time:", self.heuristic_measure * 1000)
 
         return path[::-1]
 
@@ -766,7 +801,7 @@ class App:
             )
             self.metric_results[solver.algorithm_name] = solver.output_metrics()
 
-        print(self.metric_results)
+        print("\n".join(self.metric_results.values()))
         self.io_handler.write_metrics_result("\n".join(self.metric_results.values()))
 
     def preview_map(self, map_name):
