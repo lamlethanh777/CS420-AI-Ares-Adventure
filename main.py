@@ -22,6 +22,7 @@ from PyQt5.QtGui import (
     QPainterPath,
     QPen,
     QFont,
+    QIcon,
 )
 from math import sqrt
 import heapq
@@ -230,6 +231,7 @@ class Solver:
         pass
 
     def solve_and_measure(self, problem: Problem):
+        self.change_problem(problem)
         self.start_timer()
         result = self.solve(problem)
         self.result = "".join(result) if result is not None else None
@@ -378,7 +380,7 @@ class DFSolver(Solver):
         node = Node(self.problem.initial, None, None, 0, 0, 0)
         if self.problem.is_goal(node.state):
             return self.trace_path(node)
-        frontier = [node] # stack
+        frontier = [node]  # stack
         reached = set()
         reached.add(node.state)
         self.nodes_generated = 1
@@ -405,12 +407,12 @@ class DFSolver(Solver):
 
                     if self.problem.is_goal(child_state):
                         return self.trace_path(child_node)
-                    
+
                     frontier.append(child_node)
                     reached.add(child_state)
                     self.nodes_generated += 1
         return None
-    
+
     def trace_path(self, node):
         self.steps = node.steps
         self.total_weight_pushed = node.weight_pushed
@@ -432,9 +434,9 @@ class BFSolver(Solver):
     # Hint: You should use the heapq to implement the frontier
     def solve(self, problem: Problem):
         super().solve(problem)
-        
+
         node = Node(self.problem.initial, None, None, 0, 0, 0)
-        #FIFO queue
+        # FIFO queue
         frontier = []
         reached = set()
         self.nodes_generated = 1
@@ -553,116 +555,118 @@ class UCSolver(Solver):
 
 MINIMUM_FPS = 1
 MAXIMUM_FPS = 100
-DEFAULT_FPS = 10
+DEFAULT_FPS = 4
 
 
 class SokobanVisualizer(QWidget):
+    """Visualizer class for Sokoban puzzle game."""
+
     movements = {"u": (-1, 0), "d": (1, 0), "l": (0, -1), "r": (0, 1)}
 
+    # region Visualizer Initialization
     def __init__(self):
+        """Initialize the SokobanVisualizer widget."""
         super().__init__()
-
-        # Initialize variables
-        self.tile_size = 40
-        self.maze = None
-        self.rock_weights = None
-        self.rocks_map = None
-        self.update_cells_list = []
-        self.moves = []
-        self.total_steps = 0
-        self.total_cost = 0
-
-        self.speed = 1000 // DEFAULT_FPS
-        self.timer = None
-
-        # Initialize UI elements
+        self.initialize_variables()
         self.load_images()
         self.prepare_ui()
 
+    def initialize_variables(self):
+        """Initialize instance variables with default values."""
+        self.tile_size = 40
+        self.maze = None
+        self.rock_weights = None
+        self.rocks_map = {}
+        self.moves = []
+        self.total_steps = 0
+        self.total_cost = 0
+        self.speed = 1000 // DEFAULT_FPS
+        self.timer = None
+        self.player_pos = (0, 0)
+        self.player_direction = "d"
+        self.move_index = 0
+        self.goals = []
+
+    def load_images(self):
+        """Load game images from files and store as instance variables."""
+        self.wall_image_orig = QPixmap("img/wall.png")
+        self.incorrect_box_image_orig = QPixmap("img/incorrect_box.png")
+        self.correct_box_image_orig = QPixmap("img/correct_box.png")
+        self.goal_image_orig = QPixmap("img/goal.png")
+        self.floor_image_orig = QPixmap("img/floor.png")
+        self.player_images_orig = {
+            "u": QPixmap("img/player_up.png"),
+            "d": QPixmap("img/player_down.png"),
+            "l": QPixmap("img/player_left.png"),
+            "r": QPixmap("img/player_right.png"),
+        }
+        self.rescale_images()
+
+    def rescale_images(self):
+        """Rescale loaded images to match current tile size."""
+        self.wall_image = self.wall_image_orig.scaled(self.tile_size, self.tile_size)
+        self.incorrect_box_image = self.incorrect_box_image_orig.scaled(
+            self.tile_size, self.tile_size
+        )
+        self.correct_box_image = self.correct_box_image_orig.scaled(
+            self.tile_size, self.tile_size
+        )
+        self.goal_image = self.goal_image_orig
+        self.floor_image = self.floor_image_orig.scaled(self.tile_size, self.tile_size)
+        self.player_images = {
+            direction: image.scaledToHeight(self.tile_size)
+            for direction, image in self.player_images_orig.items()
+        }
+        
+    # endregion
+
+    # region Visualizer Map Management
     def change_map(self, maze, rock_weights):
-        self.change_map_data(maze, rock_weights)
+        """Update the current map with new maze and rock weights."""
+        self.maze = maze
+        self.rock_weights = rock_weights
+        self.reset_map()
         self.prepare_ui()
         self.update()
 
-    def load_images(self):
-        # Load and scale images
-        self.wall_image = QPixmap("img/wall.png").scaled(self.tile_size, self.tile_size)
-        self.incorrect_box_image = QPixmap("img/incorrect_box.png").scaled(
-            self.tile_size, self.tile_size
-        )
-        self.correct_box_image = QPixmap("img/correct_box.png").scaled(
-            self.tile_size, self.tile_size
-        )
-        self.goal_image = QPixmap("img/goal.png")
-        self.floor_image = QPixmap("img/floor.png").scaled(
-            self.tile_size, self.tile_size
-        )
-        # Load player images for each direction
-        self.player_images = {
-            "u": QPixmap("img/player_up.png").scaledToHeight(self.tile_size),
-            "d": QPixmap("img/player_down.png").scaledToHeight(self.tile_size),
-            "l": QPixmap("img/player_left.png").scaledToHeight(self.tile_size),
-            "r": QPixmap("img/player_right.png").scaledToHeight(self.tile_size),
-        }
-
-    def change_map_data(self, maze, rock_weights):
-        self.maze = maze
-        self.rock_weights = rock_weights
-        self.rocks_map = {}
-        count = 0
-        for i in range(len(maze)):
-            for j in range(len(maze[i])):
-                if maze[i][j] == "$" or maze[i][j] == "*":
-                    self.rocks_map[(i, j)] = rock_weights[count]
-                    count += 1
-
-        self.player_pos = next(
-            (i, j)
-            for i in range(len(maze))
-            for j in range(len(maze[i]))
-            if maze[i][j] == "@"
-        )
-        self.goals = [
-            (i, j)
-            for i in range(len(maze))
-            for j in range(len(maze[i]))
-            if maze[i][j] == "."
-        ]
+    def reset_map(self):
+        """Reset the map to its initial state."""
+        self.load_maze_data()
         self.move_index = 0
         self.total_cost = 0
         self.total_steps = 0
         self.update()
 
-    def rescale_images(self):
-        self.wall_image = self.wall_image.scaled(self.tile_size, self.tile_size)
-        self.incorrect_box_image = self.incorrect_box_image.scaled(
-            self.tile_size, self.tile_size
-        )
-        self.correct_box_image = self.correct_box_image.scaled(
-            self.tile_size, self.tile_size
-        )
-        self.goal_image = self.goal_image.scaled(self.tile_size, self.tile_size)
-        self.floor_image = self.floor_image.scaled(self.tile_size, self.tile_size)
-        self.player_images = {
-            "u": self.player_images["u"].scaledToHeight(self.tile_size),
-            "d": self.player_images["d"].scaledToHeight(self.tile_size),
-            "l": self.player_images["l"].scaledToHeight(self.tile_size),
-            "r": self.player_images["r"].scaledToHeight(self.tile_size),
-        }
+    def load_maze_data(self):
+        """Load maze data including rocks and player positions."""
+        self.rocks_map = {}
+        count = 0
+        for i, row in enumerate(self.maze):
+            for j, cell in enumerate(row):
+                if cell == "$":
+                    self.rocks_map[(i, j)] = self.rock_weights[count]
+                    count += 1
+                elif cell == "@":
+                    self.player_pos = (i, j)
+        self.goals = [
+            (i, j)
+            for i, row in enumerate(self.maze)
+            for j, cell in enumerate(row)
+            if cell == "."
+        ]
+        
+    # endregion
 
-    def reset_map(self):
-        self.change_map_data(self.maze, self.rock_weights)
-
+    # region Visualizer UI Setup and Drawing
     def prepare_ui(self):
+        """Set up the UI dimensions and scaling."""
         if not self.maze:
             return
 
         self.reset_map()
-
         self.width = max(len(row) for row in self.maze) * self.tile_size
         self.height = len(self.maze) * self.tile_size
-
-        self.setMinimumSize(self.width, self.height + 40)
+        self.setMinimumSize(self.width, self.height)
         self.update_player_direction("d")
 
         tile_size = int(sqrt(800 * 600 / (self.width * self.height)))
@@ -671,148 +675,8 @@ class SokobanVisualizer(QWidget):
         if self.tile_size != 40:
             self.rescale_images()
 
-    def update_player_direction(self, direction):
-        self.player_direction = direction
-
-    def paint_rock_text(self, x, y, text, painter):
-        # Set text properties
-        painter.setPen(Qt.white)
-        font = painter.font()
-        font.setBold(True)
-        font.setPointSize(10)
-        painter.setFont(font)
-
-        # Calculate text rectangle in the middle of the box
-        text_rect = painter.fontMetrics().boundingRect(text)
-        text_x = x * self.tile_size + (self.tile_size - text_rect.width()) // 2
-        text_y = y * self.tile_size + (self.tile_size - text_rect.height()) // 2 - 5
-
-        # Draw text with black background for better visibility
-        painter.setPen(Qt.black)
-        painter.drawText(text_x + 1, text_y + text_rect.height(), text)
-        painter.setPen(Qt.white)
-        painter.drawText(text_x, text_y + text_rect.height(), text)
-
-    def paint_cell(self, x, y, cell, painter):
-        tile_x = x * self.tile_size
-        tile_y = y * self.tile_size
-
-        opacity = 1.0
-
-        # Determine which image to draw
-        if cell == "#":
-            image = self.wall_image
-        elif cell == ".":
-            image = self.goal_image
-        elif cell == "$":
-            image = self.incorrect_box_image
-        elif cell == "*":
-            image = self.correct_box_image
-        elif cell == "@":
-            image = self.player_images[self.player_direction]
-        elif cell == "+":
-            image = self.player_images[self.player_direction]
-            opacity = 0.5
-        else:
-            return
-
-        # Calculate the position to center the image
-        iw = image.width()
-        ih = image.height()
-        offset_x = (self.tile_size - iw) // 2
-        offset_y = (self.tile_size - ih) // 2
-        pos = QPoint(tile_x + offset_x, tile_y + offset_y)
-
-        painter.setOpacity(opacity)
-        painter.drawPixmap(pos, image)
-
-        if cell == "$" or cell == "*":
-            self.paint_rock_text(x, y, str(self.rocks_map[(y, x)]), painter)
-
-    def paint_cost(self, painter):
-        # Status bar dimensions
-        bar_height = 30
-        bar_y = self.height - bar_height
-        bar_width = self.width
-        button_height = 24
-        button_padding = 15
-        button_spacing = 20
-        corner_radius = 4
-
-        # Draw main status bar background
-        painter.fillRect(0, bar_y, bar_width, bar_height, QColor(50, 50, 50, 200))
-
-        # Configure text style
-        font = QFont("Segoe UI", 10)
-        font.setBold(True)
-        painter.setFont(font)
-
-        # Button style parameters
-        button_y = bar_y + (bar_height - button_height) // 2
-
-        # Draw Steps button
-        steps_text = f"Steps: {self.total_steps}"
-        text_width = painter.fontMetrics().width(steps_text)
-        button_width = text_width + 2 * button_padding
-
-        # Left button (Steps)
-        left_x = 10
-        gradient = QLinearGradient(left_x, button_y, left_x, button_y + button_height)
-        gradient.setColorAt(0, QColor(240, 240, 240))
-        gradient.setColorAt(1, QColor(224, 224, 224))
-
-        path = QPainterPath()
-        path.addRoundedRect(
-            left_x, button_y, button_width, button_height, corner_radius, corner_radius
-        )
-        painter.fillPath(path, gradient)
-
-        # Draw button border
-        painter.setPen(QPen(QColor(204, 204, 204)))
-        painter.drawRoundedRect(
-            left_x, button_y, button_width, button_height, corner_radius, corner_radius
-        )
-
-        # Draw Steps text
-        painter.setPen(Qt.black)
-        text_y = (
-            button_y
-            + (
-                button_height
-                + painter.fontMetrics().ascent()
-                - painter.fontMetrics().descent()
-            )
-            // 2
-        )
-        painter.drawText(left_x + button_padding, text_y, steps_text)
-
-        # Right button (Cost)
-        cost_text = f"Cost: {self.total_cost}"
-        text_width = painter.fontMetrics().width(cost_text)
-        button_width = text_width + 2 * button_padding
-        right_x = left_x + button_width + button_spacing
-
-        gradient = QLinearGradient(right_x, button_y, right_x, button_y + button_height)
-        gradient.setColorAt(0, QColor(240, 240, 240))
-        gradient.setColorAt(1, QColor(224, 224, 224))
-
-        path = QPainterPath()
-        path.addRoundedRect(
-            right_x, button_y, button_width, button_height, corner_radius, corner_radius
-        )
-        painter.fillPath(path, gradient)
-
-        # Draw button border
-        painter.setPen(QPen(QColor(204, 204, 204)))
-        painter.drawRoundedRect(
-            right_x, button_y, button_width, button_height, corner_radius, corner_radius
-        )
-
-        # Draw Cost text
-        painter.setPen(Qt.black)
-        painter.drawText(right_x + button_padding, text_y, cost_text)
-
     def paintEvent(self, event):
+        """Handle paint events for the widget."""
         painter = QPainter(self)
         for i in range(len(self.maze)):
             for j in range(len(self.maze[i])):
@@ -831,13 +695,64 @@ class SokobanVisualizer(QWidget):
                 "*" if cell == "." or cell == "*" else "$",
                 painter,
             )
-
-        self.paint_cost(painter)
-
         painter.end()
 
+    def paint_cell(self, x, y, cell, painter):
+        """Paint a single cell in the maze."""
+        tile_x = x * self.tile_size
+        tile_y = y * self.tile_size
+        opacity = 1.0
+
+        if cell == "#":
+            image = self.wall_image
+        elif cell == ".":
+            image = self.goal_image
+        elif cell == "$":
+            image = self.incorrect_box_image
+        elif cell == "*":
+            image = self.correct_box_image
+        elif cell == "@":
+            image = self.player_images[self.player_direction]
+        elif cell == "+":
+            image = self.player_images[self.player_direction]
+            opacity = 0.5
+        else:
+            return
+
+        iw = image.width()
+        ih = image.height()
+        offset_x = (self.tile_size - iw) // 2
+        offset_y = (self.tile_size - ih) // 2
+        pos = QPoint(tile_x + offset_x, tile_y + offset_y)
+
+        painter.setOpacity(opacity)
+        painter.drawPixmap(pos, image)
+
+        if cell == "$" or cell == "*":
+            self.paint_rock_text(x, y, str(self.rocks_map[(y, x)]), painter)
+
+    def paint_rock_text(self, x, y, text, painter):
+        """Paint the weight text on rocks."""
+        painter.setPen(Qt.white)
+        font = painter.font()
+        font.setBold(True)
+        font.setPointSize(10)
+        painter.setFont(font)
+
+        text_rect = painter.fontMetrics().boundingRect(text)
+        text_x = x * self.tile_size + (self.tile_size - text_rect.width()) // 2
+        text_y = y * self.tile_size + (self.tile_size - text_rect.height()) // 2 - 5
+
+        painter.setPen(Qt.black)
+        painter.drawText(text_x + 1, text_y + text_rect.height(), text)
+        painter.setPen(Qt.white)
+        painter.drawText(text_x, text_y + text_rect.height(), text)
+        
+    # endregion
+
+    # region Visualizer Game Logic
     def move_player(self, action):
-        # Implement player movement logic
+        """Handle player movement and rock pushing."""
         dx, dy = self.movements[action]
         new_x, new_y = self.player_pos[0] + dx, self.player_pos[1] + dy
 
@@ -846,34 +761,44 @@ class SokobanVisualizer(QWidget):
             if (box_x, box_y) not in self.rocks_map and self.maze[box_x][box_y] != "#":
                 self.player_pos = (new_x, new_y)
                 self.rocks_map[(box_x, box_y)] = self.rocks_map.pop((new_x, new_y))
-                self.total_steps += 1
                 self.total_cost += self.rocks_map[(box_x, box_y)] + 1
         elif self.maze[new_x][new_y] != "#":
             self.player_pos = (new_x, new_y)
-            self.total_steps += 1
             self.total_cost += 1
+            
+        self.total_steps += 1
 
-    def set_moves(self, moves):
-        self.moves = moves
-        self.move_index = 0
+    def update_player_direction(self, direction):
+        """Update the player's facing direction."""
+        self.player_direction = direction
 
     def update_game(self):
+        """Update game state for each animation frame."""
         if self.move_index < len(self.moves):
             action = self.moves[self.move_index].lower()
-
-            # Update the player direction based on action
             self.update_player_direction(action)
-
-            # Implement movement logic
             self.move_player(action)
-
             self.move_index += 1
+
+            if hasattr(self.parent(), "update_status_labels"):
+                self.parent().update_status_labels(self.total_steps, self.total_cost)
+
             self.update()
         else:
             self.timer.stop()
+            if hasattr(self.parent(), "visualization_complete"):
+                self.parent().visualization_complete()
+                
+    # endregion
+
+    # region Visualizer Control
+    def set_moves(self, moves):
+        """Set the sequence of moves to visualize."""
+        self.moves = moves
+        self.move_index = 0
 
     def start_visualization(self):
-        """Start the game loop to visualize moves."""
+        """Start the visualization animation."""
         if not self.moves:
             return
         if self.timer is None:
@@ -882,12 +807,17 @@ class SokobanVisualizer(QWidget):
         self.timer.start(self.speed)
 
     def pause_visualization(self):
-        """Pause the visualization."""
+        """Pause the visualization animation."""
         if self.timer and self.timer.isActive():
             self.timer.stop()
 
+    def resume_visualization(self):
+        """Resume the paused visualization."""
+        if self.timer and not self.timer.isActive():
+            self.timer.start(self.speed)
+
     def reset_visualization(self):
-        """Reset the visualization to the initial state."""
+        """Reset visualization to initial state."""
         self.reset_map()
         self.update_player_direction("d")
         self.update()
@@ -895,21 +825,31 @@ class SokobanVisualizer(QWidget):
             self.timer.stop()
 
     def change_speed(self, fps):
-        """Change the speed of the visualization."""
+        """Change visualization animation speed."""
         self.speed = 1000 // fps
         if self.timer and self.timer.isActive():
             self.timer.start(self.speed)
+            
+    # endregion
 
 
 class App(QWidget):
+    """Main application window for Sokoban puzzle solver and visualizer"""
+
+    # region App Initialization
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Ares's Adventure")
+        self.setWindowIcon(QIcon("img/icon.png"))
+        self.initialize_components()
+        self.init_ui()
+        self.center()
 
+    def initialize_components(self):
+        """Initialize core application components"""
         self.io_handler = IOHandler()
         self.maze = []
         self.rock_weights = []
-
         self.solvers = {
             "DFS": DFSolver(),
             "BFS": BFSolver(),
@@ -917,165 +857,247 @@ class App(QWidget):
             "A*": AStarSolver(),
         }
         self.results = {}
-
-        self.is_visualization_enabled = False
-        self.is_started = False
-
         self.visualizer = None
-        self.init_ui()
 
+    # endregion
+
+    # region App UI Setup
     def init_ui(self):
-        # Dropdown for maps
+        """Initialize user interface components"""
+        self.create_controls()
+        self.create_layouts()
+        self.setup_initial_state()
+
+    def create_controls(self):
+        """Create UI control elements"""
+        self.create_dropdowns()
+        self.create_buttons()
+        self.create_status_labels()
+        self.create_speed_slider()
+        self.create_speed_slider_label()
+        self.visualizer = SokobanVisualizer()
+
+    def create_dropdowns(self):
+        """Create and configure dropdown menus"""
         self.map_dropdown = QComboBox(self)
         input_files = [
             f for f in os.listdir(".") if f.endswith(".txt") and "input" in f
         ]
         self.map_dropdown.addItems(input_files)
-        self.map_dropdown.currentIndexChanged.connect(self.change_map)
+        self.map_dropdown.currentIndexChanged.connect(self.update_map)
 
-        # Dropdown for algorithms
         self.algorithm_dropdown = QComboBox(self)
         self.algorithm_dropdown.addItems(self.solvers.keys())
 
-        # Run button
-        self.run_button = QPushButton("Run", self)
-        self.run_button.clicked.connect(self.run_solvers)
+    def create_buttons(self):
+        """Create control buttons"""
+        self.solve_button = QPushButton("Solve Map!", self)
+        self.solve_button.clicked.connect(self.run_solver)
 
-        # Start, Pause, Reset buttons
         self.start_button = QPushButton("Start", self)
         self.start_button.clicked.connect(self.start_visualization)
+
         self.pause_button = QPushButton("Pause", self)
         self.pause_button.clicked.connect(self.pause_visualization)
+
         self.reset_button = QPushButton("Reset", self)
         self.reset_button.clicked.connect(self.reset_visualization)
 
-        # Slider for speed
+    def create_status_labels(self):
+        """Create status display labels"""
+        self.steps_label = QLabel("Steps: 0")
+        self.cost_label = QLabel("Cost: 0")
+
+    def create_speed_slider(self):
+        """Create speed control slider"""
         self.speed_slider = QSlider(Qt.Horizontal, self)
         self.speed_slider.setMinimum(MINIMUM_FPS)
         self.speed_slider.setMaximum(MAXIMUM_FPS)
         self.speed_slider.setValue(DEFAULT_FPS)
         self.speed_slider.valueChanged.connect(self.change_speed)
+        
+    def create_speed_slider_label(self):
+        """Create speed control slider text"""
+        self.speed_slider_text = QLabel(f"{DEFAULT_FPS} FPS")
 
-        # Layouts
-        top_layout = QHBoxLayout()
-        top_layout.addWidget(self.map_dropdown)
-        top_layout.addWidget(self.run_button)
-
-        bottom_layout = QHBoxLayout()
-        bottom_layout.addWidget(self.algorithm_dropdown)
-        bottom_layout.addWidget(self.start_button)
-        bottom_layout.addWidget(self.pause_button)
-        bottom_layout.addWidget(self.reset_button)
-        bottom_layout.addStretch()
-        bottom_layout.addWidget(QLabel("Speed:"))
-        bottom_layout.addWidget(self.speed_slider)
-
+    def create_layouts(self):
+        """Create and configure layouts"""
         main_layout = QVBoxLayout()
-        main_layout.addLayout(top_layout)
-
-        # Visualization area
-        self.visualizer = SokobanVisualizer()
+        main_layout.addLayout(self.create_top_layout())
         main_layout.addWidget(self.visualizer)
-
-        main_layout.addLayout(bottom_layout)
+        main_layout.addLayout(self.create_status_layout())
+        main_layout.addLayout(self.create_bottom_layout())
         self.setLayout(main_layout)
 
-        # Load the initial map
-        self.change_map()
+    def create_top_layout(self):
+        """Create top control layout"""
+        layout = QHBoxLayout()
+        layout.addWidget(self.map_dropdown)
+        layout.addWidget(self.algorithm_dropdown)
+        layout.addWidget(self.solve_button)
+        return layout
 
+    def create_status_layout(self):
+        """Create status display layout"""
+        layout = QHBoxLayout()
+        layout.addWidget(self.steps_label)
+        layout.addWidget(self.cost_label)
+        layout.addStretch()
+        return layout
+
+    def create_bottom_layout(self):
+        """Create bottom control layout"""
+        layout = QHBoxLayout()
+        layout.addWidget(self.start_button)
+        layout.addWidget(self.pause_button)
+        layout.addWidget(self.reset_button)
+        layout.addStretch()
+        layout.addWidget(QLabel("Speed:"))
+        layout.addWidget(self.speed_slider)
+        layout.addWidget(self.speed_slider_text)
+        return layout
+
+    def setup_initial_state(self):
+        """Setup initial application state"""
+        self.enable_visualization(False)
+        self.update_map()
         self.show()
-        self.center()  # Center the app window on the screen
 
-    def enable_visualization(self, enable):
-        self.is_visualization_enabled = enable
-        self.algorithm_dropdown.setEnabled(enable)
-        self.start_button.setEnabled(enable)
-        self.pause_button.setEnabled(enable)
-        self.reset_button.setEnabled(enable)
+    # endregion
+
+    # region App Event Handlers
+    def update_map(self):
+        """Update current map and reset visualization"""
+        map_file = self.map_dropdown.currentText()
+        if not map_file:
+            return
+
+        self.io_handler.set_input_file_name(map_file)
+        self.maze, self.rock_weights = self.io_handler.parse()
+        self.visualizer.change_map(self.maze, self.rock_weights)
+        self.reset_ui_state()
+        self.adjust_window()
+
+    def run_solver(self):
+        """Execute selected solver algorithm"""
+        self.update_map()
+        algorithm = self.algorithm_dropdown.currentText()
+
+        try:
+            problem = Problem(State(self.maze, self.rock_weights))
+            solver = self.solvers[algorithm]
+            result = solver.solve_and_measure(problem)
+
+            # Store and update visualizer with results
+            self.results[algorithm] = result
+            if result:
+                self.visualizer.set_moves(result)
+                self.process_solver_results(solver)
+                self.enable_visualization(True)
+            else:
+                QMessageBox.information(self, "Information", "No solution found.")
+                self.enable_visualization(False)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Solver failed: {str(e)}")
+
+    # endregion
+
+    # region App Visualization Control
+    def start_visualization(self):
+        """Start or resume visualization"""
+        algorithm = self.algorithm_dropdown.currentText()
+        if not self.validate_visualization(algorithm):
+            return
+
+        self.visualizer.start_visualization()
+        self.update_control_states(False)
+
+    def pause_visualization(self):
+        """Pause ongoing visualization"""
+        self.visualizer.pause_visualization()
+        self.update_control_states(True)
+        self.start_button.setText("Resume")
+
+    def reset_visualization(self):
+        """Reset visualization to initial state"""
+        self.visualizer.reset_visualization()
+        self.update_control_states(True)
+        self.start_button.setText("Start")
+        self.update_status_labels(0, 0)
+
+    # endregion
+
+    # region App UI Helpers
+    def update_status_labels(self, steps, cost):
+        """Update status display values"""
+        self.steps_label.setText(f"Steps: {steps}")
+        self.cost_label.setText(f"Cost: {cost}")
 
     def center(self):
-        """Centers the window on the screen."""
+        """Center window on screen"""
         qr = self.frameGeometry()
         cp = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
-    def change_map(self):
-        self.is_started = False
-        map_file = self.map_dropdown.currentText()
-        print(map_file)
-        if not map_file:
-            return
-
-        # Read the map file
-        self.io_handler.set_input_file_name(map_file)
-        self.maze, self.rock_weights = self.io_handler.parse()
-
-        # Update the visualizer
-        self.visualizer.change_map(self.maze, self.rock_weights)
-        self.enable_visualization(False)
-
-        # Adjust the size of the main window to fit the new content
+    def adjust_window(self):
+        """Adjust and center window"""
         self.adjustSize()
-        # Center the window after resizing
         self.center()
 
-    def run_solvers(self):
-        self.is_started = False
-        if not self.maze:
-            QMessageBox.information(self, "Information", "Please select the map first!")
-        # algorithm = self.algorithm_dropdown.currentText()
-        print("Running solvers...")
-        problem = Problem(State(self.maze, self.rock_weights))
+    def reset_ui_state(self):
+        """Reset UI to initial state"""
+        self.enable_visualization(False)
+        self.update_status_labels(0, 0)
 
-        # Run the solver and get moves
-        output_result = ""
-        for name, solver in self.solvers.items():
-            solver.change_problem(problem)
-            self.results[name] = solver.solve_and_measure(problem)
-            output_result += solver.output_metrics() + "\n"
-        print(output_result)
-        self.io_handler.write_metrics_result(output_result)
+    def enable_visualization(self, enable):
+        """Update visualization control states"""
+        self.start_button.setEnabled(enable)
+        self.pause_button.setEnabled(False)
+        self.reset_button.setEnabled(enable)
+        self.start_button.setText("Start")
 
-        QMessageBox.information(self, "Information", "Solver completed successfully.")
-
-        # Enable visualization
-        self.enable_visualization(True)
-
-    def start_visualization(self):
-        if self.is_started:
-            return
-
-        algorithm = self.algorithm_dropdown.currentText()
-        if algorithm in self.results:
-            moves = self.results[algorithm]
-            if moves is None:  # No solution found
-                QMessageBox.information(
-                    self, "Information", f"No solution found for {algorithm}"
-                )
-                return
-            self.visualizer.set_moves(moves)
-            self.visualizer.start_visualization()
-            self.is_started = True
-        else:
-            QMessageBox.information(
-                self, "Information", "Please run the solvers first."
-            )
-
-    def pause_visualization(self):
-        """Pause the ongoing visualization."""
-        if self.is_started:
-            self.is_started = False
-            self.visualizer.pause_visualization()
-
-    def reset_visualization(self):
-        """Reset the visualization to the initial state."""
-        self.is_started = False
-        self.visualizer.reset_visualization()
+    def update_control_states(self, enable_start):
+        """Update control states based on visualization state"""
+        self.start_button.setEnabled(enable_start)
+        self.pause_button.setEnabled(not enable_start)
+        self.solve_button.setEnabled(enable_start)
+        self.map_dropdown.setEnabled(enable_start)
+        self.algorithm_dropdown.setEnabled(enable_start)
 
     def change_speed(self, fps):
-        """Change the speed of the visualization."""
+        """Update visualization speed"""
         self.visualizer.change_speed(fps)
+        self.speed_slider_text.setText(f"{fps} FPS")
+
+    def visualization_complete(self):
+        """Handle visualization completion"""
+        self.start_button.setEnabled(False)
+        self.pause_button.setEnabled(False)
+
+    # endregion
+
+    # region App Helpers
+    def validate_visualization(self, algorithm):
+        """Validate visualization can start"""
+        if algorithm not in self.results:
+            QMessageBox.information(self, "Information", "Please run the solver first.")
+            return False
+        if self.results[algorithm] is None:
+            QMessageBox.information(
+                self, "Information", f"No solution found for {algorithm}"
+            )
+            return False
+        return True
+
+    def process_solver_results(self, solver):
+        """Process and display solver results"""
+        output_result = solver.output_metrics() + "\n"
+        print(output_result)
+        self.io_handler.write_metrics_result(output_result)
+        QMessageBox.information(self, "Information", "Map solved successfully.")
+
+    # endregion
 
 
 def main():

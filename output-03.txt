@@ -1,9 +1,3 @@
-DFS
-No solution found.
-BFS
-No solution found.
-UCS
-No solution found.
 A*
-Steps: 40, Cost: 122, Node: 89341, Time (ms): 5674.53, Memory (MB): 47.47
+Steps: 40, Cost: 122, Node: 89341, Time (ms): 5253.44, Memory (MB): 47.59
 uurrrrrdDDDDrrUruLLddlDDDulllldlUUUdrRRR
