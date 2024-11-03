@@ -830,14 +830,21 @@ class SokobanVisualizer(QWidget):
 
 
 class App(QWidget):
+    """Main application window for Sokoban puzzle solver and visualizer"""
+
+    #region Initialization
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Ares's Adventure")
+        self.setWindowTitle("Sokoban Visualizer")
+        self.initialize_components()
+        self.init_ui()
+        self.center()
 
+    def initialize_components(self):
+        """Initialize core application components"""
         self.io_handler = IOHandler()
         self.maze = []
         self.rock_weights = []
-
         self.solvers = {
             "DFS": DFSolver(),
             "BFS": BFSolver(),
@@ -845,215 +852,230 @@ class App(QWidget):
             "A*": AStarSolver(),
         }
         self.results = {}
-
         self.visualizer = None
-        self.init_ui()
+    #endregion
 
+    #region UI Setup
     def init_ui(self):
-        # Dropdown for maps
-        self.map_dropdown = QComboBox(self)
-        input_files = [
-            f for f in os.listdir(".") if f.endswith(".txt") and "input" in f
-        ]
-        self.map_dropdown.addItems(input_files)
-        self.map_dropdown.currentIndexChanged.connect(self.change_map)
+        """Initialize user interface components"""
+        self.create_controls()
+        self.create_layouts()
+        self.setup_initial_state()
 
-        # Dropdown for algorithms
+    def create_controls(self):
+        """Create UI control elements"""
+        self.create_dropdowns()
+        self.create_buttons()
+        self.create_status_labels()
+        self.create_speed_slider()
+        self.visualizer = SokobanVisualizer()
+
+    def create_dropdowns(self):
+        """Create and configure dropdown menus"""
+        self.map_dropdown = QComboBox(self)
+        input_files = [f for f in os.listdir(".") if f.endswith(".txt") and "input" in f]
+        self.map_dropdown.addItems(input_files)
+        self.map_dropdown.currentIndexChanged.connect(self.update_map)
+
         self.algorithm_dropdown = QComboBox(self)
         self.algorithm_dropdown.addItems(self.solvers.keys())
-        self.algorithm_dropdown.currentIndexChanged.connect(self.change_algorithm)
 
-        # Run button
+    def create_buttons(self):
+        """Create control buttons"""
         self.run_button = QPushButton("Run", self)
         self.run_button.clicked.connect(self.run_solver)
 
-        # Add status labels with stylish appearance
-        self.steps_label = QLabel("Steps: 0")
-        self.cost_label = QLabel("Cost: 0")
-        # self.style_status_labels()
-
-        # Start, Pause, Reset buttons
         self.start_button = QPushButton("Start", self)
         self.start_button.clicked.connect(self.start_visualization)
+
         self.pause_button = QPushButton("Pause", self)
         self.pause_button.clicked.connect(self.pause_visualization)
+
         self.reset_button = QPushButton("Reset", self)
         self.reset_button.clicked.connect(self.reset_visualization)
 
-        # Slider for speed
+    def create_status_labels(self):
+        """Create status display labels"""
+        self.steps_label = QLabel("Steps: 0")
+        self.cost_label = QLabel("Cost: 0")
+
+    def create_speed_slider(self):
+        """Create speed control slider"""
         self.speed_slider = QSlider(Qt.Horizontal, self)
         self.speed_slider.setMinimum(MINIMUM_FPS)
         self.speed_slider.setMaximum(MAXIMUM_FPS)
         self.speed_slider.setValue(DEFAULT_FPS)
         self.speed_slider.valueChanged.connect(self.change_speed)
 
-        # Layouts
-        top_layout = QHBoxLayout()
-        top_layout.addWidget(self.map_dropdown)
-        top_layout.addWidget(self.algorithm_dropdown)
-        top_layout.addWidget(self.run_button)
-
-        self.visualizer = SokobanVisualizer()
-
-        status_layout = QHBoxLayout()
-        status_layout.addWidget(self.steps_label)
-        status_layout.addWidget(self.cost_label)
-        status_layout.addStretch()
-
-        bottom_layout = QHBoxLayout()
-        bottom_layout.addWidget(self.start_button)
-        bottom_layout.addWidget(self.pause_button)
-        bottom_layout.addWidget(self.reset_button)
-        bottom_layout.addStretch()
-        bottom_layout.addWidget(QLabel("Speed:"))
-        bottom_layout.addWidget(self.speed_slider)
-
+    def create_layouts(self):
+        """Create and configure layouts"""
         main_layout = QVBoxLayout()
-        main_layout.addLayout(top_layout)
+        main_layout.addLayout(self.create_top_layout())
         main_layout.addWidget(self.visualizer)
-        main_layout.addLayout(status_layout)
-        main_layout.addLayout(bottom_layout)
-
+        main_layout.addLayout(self.create_status_layout())
+        main_layout.addLayout(self.create_bottom_layout())
         self.setLayout(main_layout)
 
-        # Load the initial map
-        self.change_map()
+    def create_top_layout(self):
+        """Create top control layout"""
+        layout = QHBoxLayout()
+        layout.addWidget(self.map_dropdown)
+        layout.addWidget(self.algorithm_dropdown)
+        layout.addWidget(self.run_button)
+        return layout
 
+    def create_status_layout(self):
+        """Create status display layout"""
+        layout = QHBoxLayout()
+        layout.addWidget(self.steps_label)
+        layout.addWidget(self.cost_label)
+        layout.addStretch()
+        return layout
+
+    def create_bottom_layout(self):
+        """Create bottom control layout"""
+        layout = QHBoxLayout()
+        layout.addWidget(self.start_button)
+        layout.addWidget(self.pause_button)
+        layout.addWidget(self.reset_button)
+        layout.addStretch()
+        layout.addWidget(QLabel("Speed:"))
+        layout.addWidget(self.speed_slider)
+        return layout
+
+    def setup_initial_state(self):
+        """Setup initial application state"""
+        self.enable_visualization(False)
+        self.update_map()
         self.show()
-        self.center()
+    #endregion
 
-    def style_status_labels(self):
-        """Apply stylish appearance to status labels"""
-        style = """
-            QLabel {
-                background-color: #f0f0f0;
-                border: 1px solid #cccccc;
-                border-radius: 4px;
-                padding: 5px 15px;
-                font-family: 'Segoe UI';
-                font-weight: bold;
-                font-size: 10pt;
-            }
-        """
-        self.steps_label.setStyleSheet(style)
-        self.cost_label.setStyleSheet(style)
+    #region Event Handlers
+    def update_map(self):
+        """Update current map and reset visualization"""
+        map_file = self.map_dropdown.currentText()
+        if not map_file:
+            return
+
+        self.io_handler.set_input_file_name(map_file)
+        self.maze, self.rock_weights = self.io_handler.parse()
+        self.visualizer.change_map(self.maze, self.rock_weights)
+        self.reset_ui_state()
+        self.adjust_window()
+
+    def run_solver(self):
+        """Execute selected solver algorithm"""
+        self.update_map()
+        algorithm = self.algorithm_dropdown.currentText()
         
+        try:
+            problem = Problem(State(self.maze, self.rock_weights))
+            solver = self.solvers[algorithm]
+            result = solver.solve_and_measure(problem)
+            
+            # Store and update visualizer with results
+            self.results[algorithm] = result
+            if result:
+                self.visualizer.set_moves(result)
+                self.process_solver_results(solver)
+                self.enable_visualization(True)
+            else:
+                QMessageBox.information(self, "Information", "No solution found.")
+                self.enable_visualization(False)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Solver failed: {str(e)}")
+    #endregion
+
+    #region Visualization Control
+    def start_visualization(self):
+        """Start or resume visualization"""
+        algorithm = self.algorithm_dropdown.currentText()
+        if not self.validate_visualization(algorithm):
+            return
+            
+        self.visualizer.start_visualization()
+        self.update_control_states(False)
+
+    def pause_visualization(self):
+        """Pause ongoing visualization"""
+        self.visualizer.pause_visualization()
+        self.update_control_states(True)
+        self.start_button.setText("Resume")
+
+    def reset_visualization(self):
+        """Reset visualization to initial state"""
+        self.visualizer.reset_visualization()
+        self.update_control_states(True)
+        self.start_button.setText("Start")
+        self.update_status_labels(0, 0)
+    #endregion
+
+    #region UI Helpers
     def update_status_labels(self, steps, cost):
-        """Update the status labels with current values"""
+        """Update status display values"""
         self.steps_label.setText(f"Steps: {steps}")
         self.cost_label.setText(f"Cost: {cost}")
 
-    def enable_visualization(self, enable):
-        self.start_button.setEnabled(enable)
-        self.pause_button.setEnabled(False)
-        self.reset_button.setEnabled(enable)
-
-        self.start_button.setText("Start")
-
-    def enable_run(self, enable):
-        self.run_button.setEnabled(enable)
-        self.map_dropdown.setEnabled(enable)
-        self.algorithm_dropdown.setEnabled(enable)
-
     def center(self):
-        """Centers the window on the screen."""
+        """Center window on screen"""
         qr = self.frameGeometry()
         cp = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
-    def change_map(self):
-        map_file = self.map_dropdown.currentText()
-        print(map_file)
-        if not map_file:
-            return
-
-        # Read the map file
-        self.io_handler.set_input_file_name(map_file)
-        self.maze, self.rock_weights = self.io_handler.parse()
-
-        # Update the visualizer
-        self.visualizer.change_map(self.maze, self.rock_weights)
-
-        # Reset other UI elements
-        self.enable_visualization(False)
-        self.update_status_labels(0, 0)  # Reset labels
-
-        # Adjust the size of the main window to fit the new content
+    def adjust_window(self):
+        """Adjust and center window"""
         self.adjustSize()
-        # Center the window after resizing
         self.center()
 
-    def change_algorithm(self):
-        # Reset other UI elements
+    def reset_ui_state(self):
+        """Reset UI to initial state"""
         self.enable_visualization(False)
+        self.update_status_labels(0, 0)
 
-    def run_solver(self):
-        # Reset the visualization
-        self.change_map()
-        self.change_algorithm()
-
-        # Get the solver and problem
-        algorithm = self.algorithm_dropdown.currentText()
-        problem = Problem(State(self.maze, self.rock_weights))
-        solver = self.solvers[algorithm]
-
-        # Run the solver and get moves
-        print(f"Running {algorithm} solver...")
-        self.results[algorithm] = solver.solve_and_measure(problem)
-        self.visualizer.set_moves(self.results[algorithm])
-
-        # Output the metrics result
-        output_result = solver.output_metrics() + "\n"
-        print(output_result)
-        self.io_handler.write_metrics_result(output_result)
-
-        QMessageBox.information(self, "Information", "Solver completed successfully.")
-
-        # Enable visualization
-        self.enable_visualization(True)
-
-    def enable_start(self, enable):
-        self.enable_run(enable)
+    def enable_visualization(self, enable):
+        """Update visualization control states"""
         self.start_button.setEnabled(enable)
-        self.pause_button.setEnabled(not enable)
-
-    def start_visualization(self):
-        algorithm = self.algorithm_dropdown.currentText()
-        if algorithm in self.results:
-            moves = self.results[algorithm]
-            if moves is None:
-                QMessageBox.information(
-                    self, "Information", f"No solution found for {algorithm}"
-                )
-                return
-
-            self.visualizer.start_visualization()
-            self.enable_start(False)
-        else:
-            QMessageBox.information(self, "Information", "Please run the solver first.")
-
-    def pause_visualization(self):
-        """Pause the ongoing visualization."""
-        self.visualizer.pause_visualization()
-        self.enable_start(True)
-        self.start_button.setText("Resume")
-
-    def reset_visualization(self):
-        """Reset the visualization to the initial state."""
-        self.visualizer.reset_visualization()
-        self.enable_start(True)
+        self.pause_button.setEnabled(False)
+        self.reset_button.setEnabled(enable)
         self.start_button.setText("Start")
 
+    def update_control_states(self, enable_start):
+        """Update control states based on visualization state"""
+        self.start_button.setEnabled(enable_start)
+        self.pause_button.setEnabled(not enable_start)
+        self.run_button.setEnabled(enable_start)
+        self.map_dropdown.setEnabled(enable_start)
+        self.algorithm_dropdown.setEnabled(enable_start)
+
     def change_speed(self, fps):
-        """Change the speed of the visualization."""
+        """Update visualization speed"""
         self.visualizer.change_speed(fps)
 
     def visualization_complete(self):
         """Handle visualization completion"""
         self.start_button.setEnabled(False)
         self.pause_button.setEnabled(False)
+    #endregion
 
+    #region Helpers
+    def validate_visualization(self, algorithm):
+        """Validate visualization can start"""
+        if algorithm not in self.results:
+            QMessageBox.information(self, "Information", "Please run the solver first.")
+            return False
+        if self.results[algorithm] is None:
+            QMessageBox.information(self, "Information", f"No solution found for {algorithm}")
+            return False
+        return True
+
+    def process_solver_results(self, solver):
+        """Process and display solver results"""
+        output_result = solver.output_metrics() + "\n"
+        print(output_result)
+        self.io_handler.write_metrics_result(output_result)
+        QMessageBox.information(self, "Information", "Solver completed successfully.")
+    #endregion
 
 def main():
     app = QApplication(sys.argv)
