@@ -13,17 +13,7 @@ from PyQt5.QtWidgets import (
     QMessageBox,
 )
 from PyQt5.QtCore import Qt, QTimer, QPoint
-from PyQt5.QtGui import (
-    QPainter,
-    QColor,
-    QBrush,
-    QPixmap,
-    QLinearGradient,
-    QPainterPath,
-    QPen,
-    QFont,
-    QIcon,
-)
+from PyQt5.QtGui import QPainter, QPixmap, QIcon
 from math import sqrt
 import heapq
 import time
@@ -229,14 +219,14 @@ class Solver:
         self.memory_end = tracemalloc.get_traced_memory()[1]
         tracemalloc.stop()
 
-    def solve(self, problem: Problem):
+    def solve(self):
         """Override this method in the child class to implement the logic of the algorithm."""
         pass
 
     def solve_and_measure(self, problem: Problem):
         self.change_problem(problem)
         self.start_timer()
-        result = self.solve(problem)
+        result = self.solve()
         self.result = "".join(result) if result is not None else None
         self.stop_timer()
         return self.result
@@ -270,15 +260,14 @@ class DFSolver(Solver):
     def __init__(self):
         super().__init__("DFS")
 
-    # TODO: Logic of DFS algorithm is implemented here
-    def solve(self, problem: Problem):
-        super().solve(problem)
-
+    def solve(self):
         node = Node(self.problem.initial, None, None, 0, 0, 0)
         if self.problem.is_goal(node.state):
             return self.trace_path(node)
-        frontier = [node]  # stack
+
+        frontier = [node]
         reached = set()
+
         reached.add(node.state)
         self.nodes_generated = 1
 
@@ -305,8 +294,8 @@ class DFSolver(Solver):
                     if self.problem.is_goal(child_state):
                         return self.trace_path(child_node)
 
-                    frontier.append(child_node)
                     reached.add(child_state)
+                    frontier.append(child_node)
                     self.nodes_generated += 1
         return None
 
@@ -319,13 +308,11 @@ class BFSolver(Solver):
     def __init__(self):
         super().__init__("BFS")
 
-    # TODO: Logic of BFS algorithm is implemented here
-    # Hint: You should use the heapq to implement the frontier
-    def solve(self, problem: Problem):
-        super().solve(problem)
-
+    def solve(self):
         node = Node(self.problem.initial, None, None, 0, 0, 0)
-        # FIFO queue
+        if self.problem.is_goal(node.state):
+            return self.trace_path(node)
+
         frontier = []
         reached = set()
         self.nodes_generated = 1
@@ -335,10 +322,6 @@ class BFSolver(Solver):
 
         while frontier:
             node = frontier.pop(0)
-            state = node.state
-
-            if self.problem.is_goal(state):
-                return self.trace_path(node)
 
             for action, movement in self.problem.actions.items():
                 child_state, box_moved, moving_cost = self.problem.result(
@@ -350,7 +333,6 @@ class BFSolver(Solver):
                 child_cost = node.path_cost + moving_cost
 
                 if child_state not in reached:
-                    reached.add(child_state)
                     child_node = Node(
                         child_state,
                         node,
@@ -359,6 +341,10 @@ class BFSolver(Solver):
                         node.weight_pushed + moving_cost - 1,
                         node.steps + 1,
                     )
+                    if self.problem.is_goal(child_state):
+                        return self.trace_path(child_node)
+
+                    reached.add(child_state)
                     frontier.append(child_node)
                     self.nodes_generated += 1
 
@@ -373,10 +359,7 @@ class UCSolver(Solver):
     def __init__(self):
         super().__init__("UCS")
 
-    # TODO: Logic of UCS algorithm is implemented here
-    def solve(self, problem: Problem):
-        super().solve(problem)
-
+    def solve(self):
         node = Node(self.problem.initial, None, None, 0, 0, 0)
         frontier = []
         reached = {}  # cost of reaching the node
@@ -401,7 +384,6 @@ class UCSolver(Solver):
                 child_cost = node.path_cost + moving_cost
 
                 if child_state not in reached or reached[child_state] > child_cost:
-                    reached[child_state] = child_cost
                     child_node = Node(
                         child_state,
                         node,
@@ -410,6 +392,7 @@ class UCSolver(Solver):
                         node.weight_pushed + moving_cost - 1,
                         node.steps + 1,
                     )
+                    reached[child_state] = child_cost
                     heapq.heappush(frontier, (child_cost, child_node))
                     self.nodes_generated += 1
 
@@ -427,9 +410,7 @@ class AStarSolver(Solver):
         self.heuristic_start = 0
         self.heuristic_calls = 0
 
-    def solve(self, problem: Problem):
-        super().solve(problem)
-
+    def solve(self):
         node = Node(self.problem.initial, None, None, 0, 0, 0)
         frontier = []
         reached = {}  # combined cost of reaching the node and heuristic cost
@@ -456,9 +437,9 @@ class AStarSolver(Solver):
 
                 is_child_reached_before = child_state in reached
                 if not is_child_reached_before:
-                    # self.heuristic_start = time.time()
+                    self.heuristic_start = time.time()
                     heuristic[child_state] = self.heuristic_cost(child_state)
-                    # self.heuristic_measure += time.time() - self.heuristic_start
+                    self.heuristic_measure += time.time() - self.heuristic_start
 
                 child_combined_cost = (
                     node.path_cost + moving_cost + heuristic[child_state]
@@ -468,8 +449,6 @@ class AStarSolver(Solver):
                     not is_child_reached_before
                     or reached[child_state] > child_combined_cost
                 ):
-                    reached[child_state] = child_combined_cost
-
                     child_node = Node(
                         child_state,
                         node,
@@ -478,6 +457,7 @@ class AStarSolver(Solver):
                         node.weight_pushed + moving_cost - 1,
                         node.steps + 1,
                     )
+                    reached[child_state] = child_combined_cost
                     heapq.heappush(frontier, (child_combined_cost, child_node))
                     self.nodes_generated += 1
 
@@ -513,11 +493,9 @@ class AStarSolver(Solver):
                 used_goals.add(closest_goal)
                 heuristic += min_distance * (rock_weight + 1)
 
-        for goal in goals:
-            if goal not in used_goals:
-                heuristic += abs(state.player_pos[0] - goal[0]) + abs(
-                    state.player_pos[1] - goal[1]
-                )
+            heuristic += abs(state.player_pos[0] - rock_pos[0]) + abs(
+                state.player_pos[1] - rock_pos[1]
+            )
 
         self.heuristic_calls += 1
         return heuristic

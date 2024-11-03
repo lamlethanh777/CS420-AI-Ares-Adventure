@@ -4,3 +4,6 @@ luuRRUUdldlddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
 UCS
 Steps: 56, Cost: 267, Node: 133334, Time (ms): 5151.88, Memory (MB): 60.48
 luuRRUUdlldddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+A*
+Steps: 56, Cost: 267, Node: 11148, Time (ms): 672.11, Memory (MB): 5.94
+luuRRUUdldlddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
