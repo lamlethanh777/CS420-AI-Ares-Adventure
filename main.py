@@ -30,7 +30,10 @@ import time
 import tracemalloc
 
 
+# region IO Handler
 class IOHandler:
+    """Input/Output handler class for reading"""
+
     def __init__(self):
         self.input_file_name = None
 
@@ -48,12 +51,18 @@ class IOHandler:
 
     def write_metrics_result(self, result):
         output_file_name = self.input_file_name.replace("input", "output")
-        with open(output_file_name, "w") as f:
+        with open(output_file_name, "a") as f:
             f.write(result)
             print(f"Metrics result is written to {output_file_name}.")
 
 
+# endregion
+
+
+# region Problem Formulation
 class State:
+    """State class for storing the state of the Sokoban puzzle game."""
+
     def __init__(
         self, maze, rock_weights=None, player_pos=None, rocks_map=None, goals=None
     ):
@@ -115,6 +124,8 @@ class State:
 
 
 class Node:
+    """Node class for search algorithms."""
+
     def __init__(self, state, parent, action, path_cost, weight_pushed, steps):
         self.state = state
         self.parent = parent
@@ -134,8 +145,9 @@ class Node:
 
 
 class Problem:
-    movement = {"u": (-1, 0), "d": (1, 0), "l": (0, -1), "r": (0, 1)}
-    actions = ["u", "d", "l", "r"]
+    """Problem class for Sokoban puzzle game defines the initial state, goal and valid actions."""
+
+    actions = {"u": (-1, 0), "d": (1, 0), "l": (0, -1), "r": (0, 1)}
 
     def __init__(self, initial: State):
         self.initial = initial
@@ -149,20 +161,7 @@ class Problem:
     def is_initial(self, state):
         return state.maze == self.initial.maze
 
-    def result(self, state: State, action: str):
-        """
-        Determines the resulting state and action after applying a given action to the current state.
-
-        Args:
-            state (object): The current state of the environment.
-            action (str): The action to be applied.
-
-        Returns:
-            tuple(State, str, int): A tuple containing the new state, the action taken, and the cost of moving. If the action results in moving a box, the action is returned in uppercase. If the action cannot be applied, returns (None, None).
-        """
-        return self.apply(state, self.actions[action])
-
-    def apply(self, state: State, movement: tuple):
+    def result(self, state: State, movement: tuple):
         """
         Apply the movement to the given state and return the resulting state.
 
@@ -200,6 +199,10 @@ class Problem:
         return None, False, 0
 
 
+# endregion
+
+
+# region Solver
 class Solver:
     def __init__(self, algorithm_name=""):
         self.algorithm_name = algorithm_name
@@ -246,7 +249,177 @@ class Solver:
         memory_used = (self.memory_end - self.memory_start) / (1024 * 1024)
         return f"{self.algorithm_name}\nSteps: {self.steps}, Cost: {self.total_cost}, Node: {self.nodes_generated}, Time (ms): {time_taken:.2f}, Memory (MB): {memory_used:.2f}\n{self.result}"
 
+    def trace_path(self, node):
+        self.steps = node.steps
+        self.total_weight_pushed = node.weight_pushed
+        self.total_cost = node.path_cost
 
+        path = []
+        while node.parent:
+            path.append(node.action)
+            node = node.parent
+
+        return path[::-1]
+
+
+# endregion
+
+
+# region DFSolver
+class DFSolver(Solver):
+    def __init__(self):
+        super().__init__("DFS")
+
+    # TODO: Logic of DFS algorithm is implemented here
+    def solve(self, problem: Problem):
+        super().solve(problem)
+
+        node = Node(self.problem.initial, None, None, 0, 0, 0)
+        if self.problem.is_goal(node.state):
+            return self.trace_path(node)
+        frontier = [node]  # stack
+        reached = set()
+        reached.add(node.state)
+        self.nodes_generated = 1
+
+        while frontier:
+            node = frontier.pop()
+
+            for action, movement in self.problem.actions.items():
+                child_state, box_moved, moving_cost = self.problem.result(
+                    node.state, movement
+                )
+                if child_state is None:
+                    continue
+
+                if child_state not in reached:
+                    child_node = Node(
+                        child_state,
+                        node,
+                        action.upper() if box_moved else action,
+                        node.path_cost + moving_cost,
+                        node.weight_pushed + moving_cost - 1,
+                        node.steps + 1,
+                    )
+
+                    if self.problem.is_goal(child_state):
+                        return self.trace_path(child_node)
+
+                    frontier.append(child_node)
+                    reached.add(child_state)
+                    self.nodes_generated += 1
+        return None
+
+
+# endregion
+
+
+# region BFSolver
+class BFSolver(Solver):
+    def __init__(self):
+        super().__init__("BFS")
+
+    # TODO: Logic of BFS algorithm is implemented here
+    # Hint: You should use the heapq to implement the frontier
+    def solve(self, problem: Problem):
+        super().solve(problem)
+
+        node = Node(self.problem.initial, None, None, 0, 0, 0)
+        # FIFO queue
+        frontier = []
+        reached = set()
+        self.nodes_generated = 1
+
+        frontier.append(node)
+        reached.add(node.state)
+
+        while frontier:
+            node = frontier.pop(0)
+            state = node.state
+
+            if self.problem.is_goal(state):
+                return self.trace_path(node)
+
+            for action, movement in self.problem.actions.items():
+                child_state, box_moved, moving_cost = self.problem.result(
+                    node.state, movement
+                )
+                if child_state is None:
+                    continue
+
+                child_cost = node.path_cost + moving_cost
+
+                if child_state not in reached:
+                    reached.add(child_state)
+                    child_node = Node(
+                        child_state,
+                        node,
+                        action.upper() if box_moved else action,
+                        child_cost,
+                        node.weight_pushed + moving_cost - 1,
+                        node.steps + 1,
+                    )
+                    frontier.append(child_node)
+                    self.nodes_generated += 1
+
+        return None
+
+
+# endregion
+
+
+# region UCSolver
+class UCSolver(Solver):
+    def __init__(self):
+        super().__init__("UCS")
+
+    # TODO: Logic of UCS algorithm is implemented here
+    def solve(self, problem: Problem):
+        super().solve(problem)
+
+        node = Node(self.problem.initial, None, None, 0, 0, 0)
+        frontier = []
+        reached = {}  # cost of reaching the node
+        self.nodes_generated = 1
+
+        heapq.heappush(frontier, (0, node))
+
+        while frontier:
+            _, node = heapq.heappop(frontier)
+            state = node.state
+
+            if self.problem.is_goal(state):
+                return self.trace_path(node)
+
+            for action, movement in self.problem.actions.items():
+                child_state, box_moved, moving_cost = self.problem.result(
+                    node.state, movement
+                )
+                if child_state is None:
+                    continue
+
+                child_cost = node.path_cost + moving_cost
+
+                if child_state not in reached or reached[child_state] > child_cost:
+                    reached[child_state] = child_cost
+                    child_node = Node(
+                        child_state,
+                        node,
+                        action.upper() if box_moved else action,
+                        child_cost,
+                        node.weight_pushed + moving_cost - 1,
+                        node.steps + 1,
+                    )
+                    heapq.heappush(frontier, (child_cost, child_node))
+                    self.nodes_generated += 1
+
+        return None
+
+
+# endregion
+
+
+# region AStarSolver
 class AStarSolver(Solver):
     def __init__(self):
         super().__init__("A*")
@@ -274,9 +447,9 @@ class AStarSolver(Solver):
             if self.problem.is_goal(state):
                 return self.trace_path(node)
 
-            for action in self.problem.actions:
-                child_state, box_moved, moving_cost = self.problem.apply(
-                    node.state, problem.movement[action]
+            for action, movement in self.problem.actions.items():
+                child_state, box_moved, moving_cost = self.problem.result(
+                    node.state, movement
                 )
                 if child_state is None:
                     continue
@@ -369,189 +542,7 @@ class AStarSolver(Solver):
         return path[::-1]
 
 
-class DFSolver(Solver):
-    def __init__(self):
-        super().__init__("DFS")
-
-    # TODO: Logic of DFS algorithm is implemented here
-    def solve(self, problem: Problem):
-        super().solve(problem)
-
-        node = Node(self.problem.initial, None, None, 0, 0, 0)
-        if self.problem.is_goal(node.state):
-            return self.trace_path(node)
-        frontier = [node]  # stack
-        reached = set()
-        reached.add(node.state)
-        self.nodes_generated = 1
-
-        while frontier:
-            node = frontier.pop()
-
-            for action in self.problem.actions:
-                child_state, box_moved, moving_cost = self.problem.apply(
-                    node.state, problem.movement[action]
-                )
-                if child_state is None:
-                    continue
-
-                if child_state not in reached:
-                    child_node = Node(
-                        child_state,
-                        node,
-                        action.upper() if box_moved else action,
-                        node.path_cost + moving_cost,
-                        node.weight_pushed + moving_cost - 1,
-                        node.steps + 1,
-                    )
-
-                    if self.problem.is_goal(child_state):
-                        return self.trace_path(child_node)
-
-                    frontier.append(child_node)
-                    reached.add(child_state)
-                    self.nodes_generated += 1
-        return None
-
-    def trace_path(self, node):
-        self.steps = node.steps
-        self.total_weight_pushed = node.weight_pushed
-        self.total_cost = node.path_cost
-
-        path = []
-        while node.parent:
-            path.append(node.action)
-            node = node.parent
-
-        return path[::-1]
-
-
-class BFSolver(Solver):
-    def __init__(self):
-        super().__init__("BFS")
-
-    # TODO: Logic of BFS algorithm is implemented here
-    # Hint: You should use the heapq to implement the frontier
-    def solve(self, problem: Problem):
-        super().solve(problem)
-
-        node = Node(self.problem.initial, None, None, 0, 0, 0)
-        # FIFO queue
-        frontier = []
-        reached = set()
-        self.nodes_generated = 1
-
-        frontier.append(node)
-        reached.add(node.state)
-
-        while frontier:
-            node = frontier.pop(0)
-            state = node.state
-
-            if self.problem.is_goal(state):
-                return self.trace_path(node)
-
-            for action in self.problem.actions:
-                child_state, box_moved, moving_cost = self.problem.apply(
-                    node.state, problem.movement[action]
-                )
-                if child_state is None:
-                    continue
-
-                child_cost = node.path_cost + moving_cost
-
-                if child_state not in reached:
-                    reached.add(child_state)
-                    child_node = Node(
-                        child_state,
-                        node,
-                        action.upper() if box_moved else action,
-                        child_cost,
-                        node.weight_pushed + moving_cost - 1,
-                        node.steps + 1,
-                    )
-                    frontier.append(child_node)
-                    self.nodes_generated += 1
-
-        return None
-
-    def trace_path(self, node):
-        self.steps = node.steps
-        self.total_weight_pushed = node.weight_pushed
-        self.total_cost = node.path_cost
-        path = []
-        while node.parent:
-            path.append(node.action)
-            node = node.parent
-
-        # print("Heuristic calculation time:", self.heuristic_measure * 1000)
-        # print("Heuristic calls:", self.heuristic_calls)
-        # print(
-        #     "Heuristic average time:",
-        #     self.heuristic_measure * 1000 / self.heuristic_calls,
-        # )
-
-        return path[::-1]
-
-
-class UCSolver(Solver):
-    def __init__(self):
-        super().__init__("UCS")
-
-    # TODO: Logic of UCS algorithm is implemented here
-    def solve(self, problem: Problem):
-        super().solve(problem)
-
-        node = Node(self.problem.initial, None, None, 0, 0, 0)
-        frontier = []
-        reached = {}  # cost of reaching the node
-        self.nodes_generated = 1
-
-        heapq.heappush(frontier, (0, node))
-
-        while frontier:
-            _, node = heapq.heappop(frontier)
-            state = node.state
-
-            if self.problem.is_goal(state):
-                return self.trace_path(node)
-
-            for action in self.problem.actions:
-                child_state, box_moved, moving_cost = self.problem.apply(
-                    node.state, problem.movement[action]
-                )
-                if child_state is None:
-                    continue
-
-                child_cost = node.path_cost + moving_cost
-
-                if child_state not in reached or reached[child_state] > child_cost:
-                    reached[child_state] = child_cost
-                    child_node = Node(
-                        child_state,
-                        node,
-                        action.upper() if box_moved else action,
-                        child_cost,
-                        node.weight_pushed + moving_cost - 1,
-                        node.steps + 1,
-                    )
-                    heapq.heappush(frontier, (child_cost, child_node))
-                    self.nodes_generated += 1
-
-        return None
-
-    def trace_path(self, node):
-        self.steps = node.steps
-        self.total_weight_pushed = node.weight_pushed
-        self.total_cost = node.path_cost
-
-        path = []
-        while node.parent:
-            path.append(node.action)
-            node = node.parent
-
-        return path[::-1]
-
+# endregion
 
 MINIMUM_FPS = 1
 MAXIMUM_FPS = 100
@@ -617,7 +608,7 @@ class SokobanVisualizer(QWidget):
             direction: image.scaledToHeight(self.tile_size)
             for direction, image in self.player_images_orig.items()
         }
-        
+
     # endregion
 
     # region Visualizer Map Management
@@ -654,7 +645,7 @@ class SokobanVisualizer(QWidget):
             for j, cell in enumerate(row)
             if cell == "."
         ]
-        
+
     # endregion
 
     # region Visualizer UI Setup and Drawing
@@ -747,7 +738,7 @@ class SokobanVisualizer(QWidget):
         painter.drawText(text_x + 1, text_y + text_rect.height(), text)
         painter.setPen(Qt.white)
         painter.drawText(text_x, text_y + text_rect.height(), text)
-        
+
     # endregion
 
     # region Visualizer Game Logic
@@ -765,7 +756,7 @@ class SokobanVisualizer(QWidget):
         elif self.maze[new_x][new_y] != "#":
             self.player_pos = (new_x, new_y)
             self.total_cost += 1
-            
+
         self.total_steps += 1
 
     def update_player_direction(self, direction):
@@ -788,7 +779,7 @@ class SokobanVisualizer(QWidget):
             self.timer.stop()
             if hasattr(self.parent(), "visualization_complete"):
                 self.parent().visualization_complete()
-                
+
     # endregion
 
     # region Visualizer Control
@@ -829,7 +820,7 @@ class SokobanVisualizer(QWidget):
         self.speed = 1000 // fps
         if self.timer and self.timer.isActive():
             self.timer.start(self.speed)
-            
+
     # endregion
 
 
@@ -915,7 +906,7 @@ class App(QWidget):
         self.speed_slider.setMaximum(MAXIMUM_FPS)
         self.speed_slider.setValue(DEFAULT_FPS)
         self.speed_slider.valueChanged.connect(self.change_speed)
-        
+
     def create_speed_slider_label(self):
         """Create speed control slider text"""
         self.speed_slider_text = QLabel(f"{DEFAULT_FPS} FPS")
