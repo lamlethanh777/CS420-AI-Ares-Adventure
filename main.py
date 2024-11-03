@@ -230,6 +230,7 @@ class Solver:
         pass
 
     def solve_and_measure(self, problem: Problem):
+        self.change_problem(problem)
         self.start_timer()
         result = self.solve(problem)
         self.result = "".join(result) if result is not None else None
@@ -662,7 +663,7 @@ class SokobanVisualizer(QWidget):
         self.width = max(len(row) for row in self.maze) * self.tile_size
         self.height = len(self.maze) * self.tile_size
 
-        self.setMinimumSize(self.width, self.height + 40)
+        self.setMinimumSize(self.width, self.height)
         self.update_player_direction("d")
 
         tile_size = int(sqrt(800 * 600 / (self.width * self.height)))
@@ -871,6 +872,9 @@ class SokobanVisualizer(QWidget):
             self.update()
         else:
             self.timer.stop()
+            # Signal completion to parent
+            if hasattr(self.parent(), 'visualization_complete'):
+                self.parent().visualization_complete()
 
     def start_visualization(self):
         """Start the game loop to visualize moves."""
@@ -885,6 +889,11 @@ class SokobanVisualizer(QWidget):
         """Pause the visualization."""
         if self.timer and self.timer.isActive():
             self.timer.stop()
+            
+    def resume_visualization(self):
+        """Resume the visualization."""
+        if self.timer and not self.timer.isActive():
+            self.timer.start(self.speed)
 
     def reset_visualization(self):
         """Reset the visualization to the initial state."""
@@ -918,9 +927,6 @@ class App(QWidget):
         }
         self.results = {}
 
-        self.is_visualization_enabled = False
-        self.is_started = False
-
         self.visualizer = None
         self.init_ui()
 
@@ -936,10 +942,11 @@ class App(QWidget):
         # Dropdown for algorithms
         self.algorithm_dropdown = QComboBox(self)
         self.algorithm_dropdown.addItems(self.solvers.keys())
+        self.algorithm_dropdown.currentIndexChanged.connect(self.change_algorithm)
 
         # Run button
         self.run_button = QPushButton("Run", self)
-        self.run_button.clicked.connect(self.run_solvers)
+        self.run_button.clicked.connect(self.run_solver)
 
         # Start, Pause, Reset buttons
         self.start_button = QPushButton("Start", self)
@@ -959,10 +966,10 @@ class App(QWidget):
         # Layouts
         top_layout = QHBoxLayout()
         top_layout.addWidget(self.map_dropdown)
+        top_layout.addWidget(self.algorithm_dropdown)
         top_layout.addWidget(self.run_button)
 
         bottom_layout = QHBoxLayout()
-        bottom_layout.addWidget(self.algorithm_dropdown)
         bottom_layout.addWidget(self.start_button)
         bottom_layout.addWidget(self.pause_button)
         bottom_layout.addWidget(self.reset_button)
@@ -984,14 +991,19 @@ class App(QWidget):
         self.change_map()
 
         self.show()
-        self.center()  # Center the app window on the screen
+        self.center()
 
     def enable_visualization(self, enable):
-        self.is_visualization_enabled = enable
-        self.algorithm_dropdown.setEnabled(enable)
         self.start_button.setEnabled(enable)
-        self.pause_button.setEnabled(enable)
+        self.pause_button.setEnabled(False)
         self.reset_button.setEnabled(enable)
+        
+        self.start_button.setText("Start")
+        
+    def enable_run(self, enable):
+        self.run_button.setEnabled(enable)
+        self.map_dropdown.setEnabled(enable)
+        self.algorithm_dropdown.setEnabled(enable)
 
     def center(self):
         """Centers the window on the screen."""
@@ -1001,7 +1013,6 @@ class App(QWidget):
         self.move(qr.topLeft())
 
     def change_map(self):
-        self.is_started = False
         map_file = self.map_dropdown.currentText()
         print(map_file)
         if not map_file:
@@ -1013,6 +1024,8 @@ class App(QWidget):
 
         # Update the visualizer
         self.visualizer.change_map(self.maze, self.rock_weights)
+        
+        # Reset other UI elements
         self.enable_visualization(False)
 
         # Adjust the size of the main window to fit the new content
@@ -1020,20 +1033,27 @@ class App(QWidget):
         # Center the window after resizing
         self.center()
 
-    def run_solvers(self):
-        self.is_started = False
-        if not self.maze:
-            QMessageBox.information(self, "Information", "Please select the map first!")
-        # algorithm = self.algorithm_dropdown.currentText()
-        print("Running solvers...")
+    def change_algorithm(self):
+        # Reset other UI elements
+        self.enable_visualization(False)
+
+    def run_solver(self):   
+        # Reset the visualization   
+        self.change_map()
+        self.change_algorithm()
+        
+        # Get the solver and problem
+        algorithm = self.algorithm_dropdown.currentText()
         problem = Problem(State(self.maze, self.rock_weights))
+        solver = self.solvers[algorithm]
 
         # Run the solver and get moves
-        output_result = ""
-        for name, solver in self.solvers.items():
-            solver.change_problem(problem)
-            self.results[name] = solver.solve_and_measure(problem)
-            output_result += solver.output_metrics() + "\n"
+        print(f"Running {algorithm} solver...")
+        self.results[algorithm] = solver.solve_and_measure(problem)
+        self.visualizer.set_moves(self.results[algorithm])
+        
+        # Output the metrics result
+        output_result = solver.output_metrics() + "\n"
         print(output_result)
         self.io_handler.write_metrics_result(output_result)
 
@@ -1042,40 +1062,50 @@ class App(QWidget):
         # Enable visualization
         self.enable_visualization(True)
 
-    def start_visualization(self):
-        if self.is_started:
-            return
+    def enable_start(self, enable):
+        self.enable_run(enable)
+        self.start_button.setEnabled(enable)
+        self.pause_button.setEnabled(not enable)
 
+    def start_visualization(self):
         algorithm = self.algorithm_dropdown.currentText()
         if algorithm in self.results:
             moves = self.results[algorithm]
-            if moves is None:  # No solution found
+            if moves is None:
                 QMessageBox.information(
                     self, "Information", f"No solution found for {algorithm}"
                 )
                 return
-            self.visualizer.set_moves(moves)
+            
             self.visualizer.start_visualization()
-            self.is_started = True
+            self.enable_start(False)
         else:
             QMessageBox.information(
-                self, "Information", "Please run the solvers first."
+                self, "Information", "Please run the solver first."
             )
 
     def pause_visualization(self):
         """Pause the ongoing visualization."""
-        if self.is_started:
-            self.is_started = False
-            self.visualizer.pause_visualization()
+        self.visualizer.pause_visualization()
+        self.enable_start(True)
+        self.start_button.setText("Resume")
+        
 
     def reset_visualization(self):
         """Reset the visualization to the initial state."""
-        self.is_started = False
         self.visualizer.reset_visualization()
+        self.enable_start(True)
+        self.start_button.setText("Start")
+        
 
     def change_speed(self, fps):
         """Change the speed of the visualization."""
         self.visualizer.change_speed(fps)
+        
+    def visualization_complete(self):
+        """Handle visualization completion"""
+        self.start_button.setEnabled(False)
+        self.pause_button.setEnabled(False)
 
 
 def main():
