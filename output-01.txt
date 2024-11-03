@@ -1,10 +1,12 @@
 DFS
-No solution found.
+Steps: 4, Cost: 105, Node: 5, Time (ms): 0.00, Memory (MB): 0.01
+RlLL
 BFS
 Steps: 4, Cost: 105, Node: 13, Time (ms): 0.00, Memory (MB): 0.01
 RlLL
 UCS
-No solution found.
+Steps: 4, Cost: 105, Node: 13, Time (ms): 0.00, Memory (MB): 0.01
+RlLL
 A*
-Steps: 4, Cost: 105, Node: 12, Time (ms): 1.01, Memory (MB): 0.01
+Steps: 4, Cost: 105, Node: 12, Time (ms): 1.00, Memory (MB): 0.01
 RlLL
