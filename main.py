@@ -379,7 +379,7 @@ class DFSolver(Solver):
         node = Node(self.problem.initial, None, None, 0, 0, 0)
         if self.problem.is_goal(node.state):
             return self.trace_path(node)
-        frontier = [node] # stack
+        frontier = [node]  # stack
         reached = set()
         reached.add(node.state)
         self.nodes_generated = 1
@@ -406,12 +406,12 @@ class DFSolver(Solver):
 
                     if self.problem.is_goal(child_state):
                         return self.trace_path(child_node)
-                    
+
                     frontier.append(child_node)
                     reached.add(child_state)
                     self.nodes_generated += 1
         return None
-    
+
     def trace_path(self, node):
         self.steps = node.steps
         self.total_weight_pushed = node.weight_pushed
@@ -433,9 +433,9 @@ class BFSolver(Solver):
     # Hint: You should use the heapq to implement the frontier
     def solve(self, problem: Problem):
         super().solve(problem)
-        
+
         node = Node(self.problem.initial, None, None, 0, 0, 0)
-        #FIFO queue
+        # FIFO queue
         frontier = []
         reached = set()
         self.nodes_generated = 1
@@ -730,89 +730,6 @@ class SokobanVisualizer(QWidget):
         if cell == "$" or cell == "*":
             self.paint_rock_text(x, y, str(self.rocks_map[(y, x)]), painter)
 
-    def paint_cost(self, painter):
-        # Status bar dimensions
-        bar_height = 30
-        bar_y = self.height - bar_height
-        bar_width = self.width
-        button_height = 24
-        button_padding = 15
-        button_spacing = 20
-        corner_radius = 4
-
-        # Draw main status bar background
-        painter.fillRect(0, bar_y, bar_width, bar_height, QColor(50, 50, 50, 200))
-
-        # Configure text style
-        font = QFont("Segoe UI", 10)
-        font.setBold(True)
-        painter.setFont(font)
-
-        # Button style parameters
-        button_y = bar_y + (bar_height - button_height) // 2
-
-        # Draw Steps button
-        steps_text = f"Steps: {self.total_steps}"
-        text_width = painter.fontMetrics().width(steps_text)
-        button_width = text_width + 2 * button_padding
-
-        # Left button (Steps)
-        left_x = 10
-        gradient = QLinearGradient(left_x, button_y, left_x, button_y + button_height)
-        gradient.setColorAt(0, QColor(240, 240, 240))
-        gradient.setColorAt(1, QColor(224, 224, 224))
-
-        path = QPainterPath()
-        path.addRoundedRect(
-            left_x, button_y, button_width, button_height, corner_radius, corner_radius
-        )
-        painter.fillPath(path, gradient)
-
-        # Draw button border
-        painter.setPen(QPen(QColor(204, 204, 204)))
-        painter.drawRoundedRect(
-            left_x, button_y, button_width, button_height, corner_radius, corner_radius
-        )
-
-        # Draw Steps text
-        painter.setPen(Qt.black)
-        text_y = (
-            button_y
-            + (
-                button_height
-                + painter.fontMetrics().ascent()
-                - painter.fontMetrics().descent()
-            )
-            // 2
-        )
-        painter.drawText(left_x + button_padding, text_y, steps_text)
-
-        # Right button (Cost)
-        cost_text = f"Cost: {self.total_cost}"
-        text_width = painter.fontMetrics().width(cost_text)
-        button_width = text_width + 2 * button_padding
-        right_x = left_x + button_width + button_spacing
-
-        gradient = QLinearGradient(right_x, button_y, right_x, button_y + button_height)
-        gradient.setColorAt(0, QColor(240, 240, 240))
-        gradient.setColorAt(1, QColor(224, 224, 224))
-
-        path = QPainterPath()
-        path.addRoundedRect(
-            right_x, button_y, button_width, button_height, corner_radius, corner_radius
-        )
-        painter.fillPath(path, gradient)
-
-        # Draw button border
-        painter.setPen(QPen(QColor(204, 204, 204)))
-        painter.drawRoundedRect(
-            right_x, button_y, button_width, button_height, corner_radius, corner_radius
-        )
-
-        # Draw Cost text
-        painter.setPen(Qt.black)
-        painter.drawText(right_x + button_padding, text_y, cost_text)
-
     def paintEvent(self, event):
         painter = QPainter(self)
         for i in range(len(self.maze)):
@@ -832,8 +749,6 @@ class SokobanVisualizer(QWidget):
                 "*" if cell == "." or cell == "*" else "$",
                 painter,
             )
-
-        self.paint_cost(painter)
 
         painter.end()
 
@@ -867,13 +782,17 @@ class SokobanVisualizer(QWidget):
 
             # Implement movement logic
             self.move_player(action)
-
             self.move_index += 1
+            
+            # Update parent's status labels
+            if hasattr(self.parent(), 'update_status_labels'):
+                self.parent().update_status_labels(self.total_steps, self.total_cost)
+            
             self.update()
         else:
             self.timer.stop()
             # Signal completion to parent
-            if hasattr(self.parent(), 'visualization_complete'):
+            if hasattr(self.parent(), "visualization_complete"):
                 self.parent().visualization_complete()
 
     def start_visualization(self):
@@ -889,7 +808,7 @@ class SokobanVisualizer(QWidget):
         """Pause the visualization."""
         if self.timer and self.timer.isActive():
             self.timer.stop()
-            
+
     def resume_visualization(self):
         """Resume the visualization."""
         if self.timer and not self.timer.isActive():
@@ -948,6 +867,11 @@ class App(QWidget):
         self.run_button = QPushButton("Run", self)
         self.run_button.clicked.connect(self.run_solver)
 
+        # Add status labels with stylish appearance
+        self.steps_label = QLabel("Steps: 0")
+        self.cost_label = QLabel("Cost: 0")
+        # self.style_status_labels()
+
         # Start, Pause, Reset buttons
         self.start_button = QPushButton("Start", self)
         self.start_button.clicked.connect(self.start_visualization)
@@ -969,6 +893,13 @@ class App(QWidget):
         top_layout.addWidget(self.algorithm_dropdown)
         top_layout.addWidget(self.run_button)
 
+        self.visualizer = SokobanVisualizer()
+
+        status_layout = QHBoxLayout()
+        status_layout.addWidget(self.steps_label)
+        status_layout.addWidget(self.cost_label)
+        status_layout.addStretch()
+
         bottom_layout = QHBoxLayout()
         bottom_layout.addWidget(self.start_button)
         bottom_layout.addWidget(self.pause_button)
@@ -979,12 +910,10 @@ class App(QWidget):
 
         main_layout = QVBoxLayout()
         main_layout.addLayout(top_layout)
-
-        # Visualization area
-        self.visualizer = SokobanVisualizer()
         main_layout.addWidget(self.visualizer)
-
+        main_layout.addLayout(status_layout)
         main_layout.addLayout(bottom_layout)
+
         self.setLayout(main_layout)
 
         # Load the initial map
@@ -993,13 +922,34 @@ class App(QWidget):
         self.show()
         self.center()
 
+    def style_status_labels(self):
+        """Apply stylish appearance to status labels"""
+        style = """
+            QLabel {
+                background-color: #f0f0f0;
+                border: 1px solid #cccccc;
+                border-radius: 4px;
+                padding: 5px 15px;
+                font-family: 'Segoe UI';
+                font-weight: bold;
+                font-size: 10pt;
+            }
+        """
+        self.steps_label.setStyleSheet(style)
+        self.cost_label.setStyleSheet(style)
+        
+    def update_status_labels(self, steps, cost):
+        """Update the status labels with current values"""
+        self.steps_label.setText(f"Steps: {steps}")
+        self.cost_label.setText(f"Cost: {cost}")
+
     def enable_visualization(self, enable):
         self.start_button.setEnabled(enable)
         self.pause_button.setEnabled(False)
         self.reset_button.setEnabled(enable)
-        
+
         self.start_button.setText("Start")
-        
+
     def enable_run(self, enable):
         self.run_button.setEnabled(enable)
         self.map_dropdown.setEnabled(enable)
@@ -1024,9 +974,10 @@ class App(QWidget):
 
         # Update the visualizer
         self.visualizer.change_map(self.maze, self.rock_weights)
-        
+
         # Reset other UI elements
         self.enable_visualization(False)
+        self.update_status_labels(0, 0)  # Reset labels
 
         # Adjust the size of the main window to fit the new content
         self.adjustSize()
@@ -1037,11 +988,11 @@ class App(QWidget):
         # Reset other UI elements
         self.enable_visualization(False)
 
-    def run_solver(self):   
-        # Reset the visualization   
+    def run_solver(self):
+        # Reset the visualization
         self.change_map()
         self.change_algorithm()
-        
+
         # Get the solver and problem
         algorithm = self.algorithm_dropdown.currentText()
         problem = Problem(State(self.maze, self.rock_weights))
@@ -1051,7 +1002,7 @@ class App(QWidget):
         print(f"Running {algorithm} solver...")
         self.results[algorithm] = solver.solve_and_measure(problem)
         self.visualizer.set_moves(self.results[algorithm])
-        
+
         # Output the metrics result
         output_result = solver.output_metrics() + "\n"
         print(output_result)
@@ -1076,32 +1027,28 @@ class App(QWidget):
                     self, "Information", f"No solution found for {algorithm}"
                 )
                 return
-            
+
             self.visualizer.start_visualization()
             self.enable_start(False)
         else:
-            QMessageBox.information(
-                self, "Information", "Please run the solver first."
-            )
+            QMessageBox.information(self, "Information", "Please run the solver first.")
 
     def pause_visualization(self):
         """Pause the ongoing visualization."""
         self.visualizer.pause_visualization()
         self.enable_start(True)
         self.start_button.setText("Resume")
-        
 
     def reset_visualization(self):
         """Reset the visualization to the initial state."""
         self.visualizer.reset_visualization()
         self.enable_start(True)
         self.start_button.setText("Start")
-        
 
     def change_speed(self, fps):
         """Change the speed of the visualization."""
         self.visualizer.change_speed(fps)
-        
+
     def visualization_complete(self):
         """Handle visualization completion"""
         self.start_button.setEnabled(False)
