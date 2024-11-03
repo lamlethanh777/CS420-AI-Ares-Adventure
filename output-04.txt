@@ -5,5 +5,5 @@ No solution found.
 UCS
 No solution found.
 A*
-Steps: 56, Cost: 267, Node: 11148, Time (ms): 791.84, Memory (MB): 6.05
-luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+Steps: 56, Cost: 267, Node: 11148, Time (ms): 689.23, Memory (MB): 6.05
+luuRRUUdldlddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU

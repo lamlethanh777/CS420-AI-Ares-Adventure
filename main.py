@@ -337,6 +337,10 @@ class AStarSolver(Solver):
             if closest_goal:
                 used_goals.add(closest_goal)
                 heuristic += min_distance * (rock_weight + 1)
+                
+        for goal in goals:
+            if goal not in used_goals:
+                heuristic += abs(state.player_pos[0] - goal[0]) + abs(state.player_pos[1] - goal[1])
 
         self.heuristic_calls += 1
         return heuristic
@@ -883,13 +887,16 @@ class App(QWidget):
     def start_visualization(self):
         if self.is_started:
             return
-
-        self.is_started = True
+        
         algorithm = self.algorithm_dropdown.currentText()
         if algorithm in self.results:
             moves = self.results[algorithm]
+            if moves is None:  # No solution found
+                QMessageBox.information(self, "Information", f"No solution found for {algorithm}")
+                return
             self.visualizer.set_moves(moves)
             self.visualizer.start_visualization()
+            self.is_started = True
         else:
             QMessageBox.information(
                 self, "Information", "Please run the solvers first."
