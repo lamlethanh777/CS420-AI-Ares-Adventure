@@ -337,10 +337,12 @@ class AStarSolver(Solver):
             if closest_goal:
                 used_goals.add(closest_goal)
                 heuristic += min_distance * (rock_weight + 1)
-                
+
         for goal in goals:
             if goal not in used_goals:
-                heuristic += abs(state.player_pos[0] - goal[0]) + abs(state.player_pos[1] - goal[1])
+                heuristic += abs(state.player_pos[0] - goal[0]) + abs(
+                    state.player_pos[1] - goal[1]
+                )
 
         self.heuristic_calls += 1
         return heuristic
@@ -349,6 +351,7 @@ class AStarSolver(Solver):
         self.steps = node.steps
         self.total_weight_pushed = node.weight_pushed
         self.total_cost = node.path_cost
+
         path = []
         while node.parent:
             path.append(node.action)
@@ -392,7 +395,56 @@ class UCSolver(Solver):
     # TODO: Logic of UCS algorithm is implemented here
     def solve(self, problem: Problem):
         super().solve(problem)
+
+        node = Node(self.problem.initial, None, None, 0, 0, 0)
+        frontier = []
+        reached = {}  # cost of reaching the node
+        self.nodes_generated = 1
+
+        heapq.heappush(frontier, (0, node))
+
+        while frontier:
+            _, node = heapq.heappop(frontier)
+            state = node.state
+
+            if self.problem.is_goal(state):
+                return self.trace_path(node)
+
+            for action in self.problem.actions:
+                child_state, box_moved, moving_cost = self.problem.apply(
+                    node.state, problem.movement[action]
+                )
+                if child_state is None:
+                    continue
+
+                child_cost = node.path_cost + moving_cost
+
+                if child_state not in reached or reached[child_state] > child_cost:
+                    reached[child_state] = child_cost
+                    child_node = Node(
+                        child_state,
+                        node,
+                        action.upper() if box_moved else action,
+                        child_cost,
+                        node.weight_pushed + moving_cost - 1,
+                        node.steps + 1,
+                    )
+                    heapq.heappush(frontier, (child_cost, child_node))
+                    self.nodes_generated += 1
+
         return None
+
+    def trace_path(self, node):
+        self.steps = node.steps
+        self.total_weight_pushed = node.weight_pushed
+        self.total_cost = node.path_cost
+
+        path = []
+        while node.parent:
+            path.append(node.action)
+            node = node.parent
+
+        return path[::-1]
 
 
 MINIMUM_FPS = 1
@@ -540,7 +592,7 @@ class SokobanVisualizer(QWidget):
     def paint_cell(self, x, y, cell, painter):
         tile_x = x * self.tile_size
         tile_y = y * self.tile_size
-        
+
         opacity = 1.0
 
         # Determine which image to draw
@@ -845,6 +897,7 @@ class App(QWidget):
         self.move(qr.topLeft())
 
     def change_map(self):
+        self.is_started = False
         map_file = self.map_dropdown.currentText()
         print(map_file)
         if not map_file:
@@ -864,6 +917,7 @@ class App(QWidget):
         self.center()
 
     def run_solvers(self):
+        self.is_started = False
         if not self.maze:
             QMessageBox.information(self, "Information", "Please select the map first!")
         # algorithm = self.algorithm_dropdown.currentText()
@@ -887,12 +941,14 @@ class App(QWidget):
     def start_visualization(self):
         if self.is_started:
             return
-        
+
         algorithm = self.algorithm_dropdown.currentText()
         if algorithm in self.results:
             moves = self.results[algorithm]
             if moves is None:  # No solution found
-                QMessageBox.information(self, "Information", f"No solution found for {algorithm}")
+                QMessageBox.information(
+                    self, "Information", f"No solution found for {algorithm}"
+                )
                 return
             self.visualizer.set_moves(moves)
             self.visualizer.start_visualization()
