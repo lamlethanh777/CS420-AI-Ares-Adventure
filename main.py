@@ -134,7 +134,7 @@ class Node:
 
 class Problem:
     movement = {"u": (-1, 0), "d": (1, 0), "l": (0, -1), "r": (0, 1)}
-    actions = {"u", "d", "l", "r"}
+    actions = ["u", "d", "l", "r"]
 
     def __init__(self, initial: State):
         self.initial = initial
@@ -469,6 +469,8 @@ class SokobanVisualizer(QWidget):
             if maze[i][j] == "."
         ]
         self.move_index = 0
+        self.total_cost = 0
+        self.total_steps = 0
         self.update()
 
     def rescale_images(self):
@@ -534,10 +536,7 @@ class SokobanVisualizer(QWidget):
     def paint_cell(self, x, y, cell, painter):
         tile_x = x * self.tile_size
         tile_y = y * self.tile_size
-
-        # Draw the floor image first
-        # floor_pos = QPoint(tile_x, tile_y)
-        # painter.drawPixmap(floor_pos, self.floor_image)
+        
         opacity = 1.0
 
         # Determine which image to draw
