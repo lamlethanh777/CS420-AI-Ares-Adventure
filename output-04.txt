@@ -1,0 +1,9 @@
+DFS
+No solution found.
+BFS
+No solution found.
+UCS
+No solution found.
+A*
+Steps: 56, Cost: 267, Node: 11148, Time (ms): 781.99, Memory (MB): 6.06
+luuRRUUdlldddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
