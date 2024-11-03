@@ -409,20 +409,16 @@ class BFSolver(Solver):
                 if child_state is None:
                     continue
 
-                is_child_reached_before = child_state in reached
+                child_cost = node.path_cost + moving_cost
 
-                child_combined_cost = (
-                    node.path_cost + moving_cost
-                )
-
-                if not is_child_reached_before:
+                if child_state not in reached:
                     
                     reached.add(child_state)
                     child_node = Node(
                         child_state,
                         node,
                         action.upper() if box_moved else action,
-                        child_combined_cost,
+                        child_cost,
                         node.weight_pushed + moving_cost - 1,
                         node.steps + 1,
                     )
