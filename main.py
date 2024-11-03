@@ -412,7 +412,6 @@ class BFSolver(Solver):
                 child_cost = node.path_cost + moving_cost
 
                 if child_state not in reached:
-                    
                     reached.add(child_state)
                     child_node = Node(
                         child_state,
