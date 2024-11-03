@@ -3,7 +3,8 @@ No solution found.
 BFS
 No solution found.
 UCS
-No solution found.
+Steps: 24, Cost: 429, Node: 37304, Time (ms): 1859.99, Memory (MB): 16.18
+lluRurrDrdLLLuRRRRRRRurD
 A*
-Steps: 24, Cost: 429, Node: 3263, Time (ms): 218.21, Memory (MB): 2.07
+Steps: 24, Cost: 429, Node: 3263, Time (ms): 173.74, Memory (MB): 1.96
 lluRurrDrdLLLuRRRRRRRurD
