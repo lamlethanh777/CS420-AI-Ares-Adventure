@@ -374,7 +374,54 @@ class DFSolver(Solver):
     # TODO: Logic of DFS algorithm is implemented here
     def solve(self, problem: Problem):
         super().solve(problem)
+
+        node = Node(self.problem.initial, None, None, 0, 0, 0)
+        if self.problem.is_goal(node.state):
+            return self.trace_path(node)
+        frontier = [node] # stack
+        reached = set()
+        reached.add(node.state)
+        self.nodes_generated = 1
+
+        while frontier:
+            node = frontier.pop()
+
+            for action in self.problem.actions:
+                child_state, box_moved, moving_cost = self.problem.apply(
+                    node.state, problem.movement[action]
+                )
+                if child_state is None:
+                    continue
+
+                if child_state not in reached:
+                    child_node = Node(
+                        child_state,
+                        node,
+                        action.upper() if box_moved else action,
+                        node.path_cost + moving_cost,
+                        node.weight_pushed + moving_cost - 1,
+                        node.steps + 1,
+                    )
+
+                    if self.problem.is_goal(child_state):
+                        return self.trace_path(child_node)
+                    
+                    frontier.append(child_node)
+                    reached.add(child_state)
+                    self.nodes_generated += 1
         return None
+    
+    def trace_path(self, node):
+        self.steps = node.steps
+        self.total_weight_pushed = node.weight_pushed
+        self.total_cost = node.path_cost
+
+        path = []
+        while node.parent:
+            path.append(node.action)
+            node = node.parent
+
+        return path[::-1]
 
 
 class BFSolver(Solver):
