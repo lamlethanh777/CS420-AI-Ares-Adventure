@@ -385,7 +385,64 @@ class BFSolver(Solver):
     # Hint: You should use the heapq to implement the frontier
     def solve(self, problem: Problem):
         super().solve(problem)
+        
+        node = Node(self.problem.initial, None, None, 0, 0, 0)
+        #FIFO queue
+        frontier = []
+        reached = set()
+        self.nodes_generated = 1
+
+        frontier.append(node)
+        reached.add(node.state)
+
+        while frontier:
+            node = frontier.pop(0)
+            state = node.state
+
+            if self.problem.is_goal(state):
+                return self.trace_path(node)
+
+            for action in self.problem.actions:
+                child_state, box_moved, moving_cost = self.problem.apply(
+                    node.state, problem.movement[action]
+                )
+                if child_state is None:
+                    continue
+
+                child_cost = node.path_cost + moving_cost
+
+                if child_state not in reached:
+                    reached.add(child_state)
+                    child_node = Node(
+                        child_state,
+                        node,
+                        action.upper() if box_moved else action,
+                        child_cost,
+                        node.weight_pushed + moving_cost - 1,
+                        node.steps + 1,
+                    )
+                    frontier.append(child_node)
+                    self.nodes_generated += 1
+
         return None
+
+    def trace_path(self, node):
+        self.steps = node.steps
+        self.total_weight_pushed = node.weight_pushed
+        self.total_cost = node.path_cost
+        path = []
+        while node.parent:
+            path.append(node.action)
+            node = node.parent
+
+        # print("Heuristic calculation time:", self.heuristic_measure * 1000)
+        # print("Heuristic calls:", self.heuristic_calls)
+        # print(
+        #     "Heuristic average time:",
+        #     self.heuristic_measure * 1000 / self.heuristic_calls,
+        # )
+
+        return path[::-1]
 
 
 class UCSolver(Solver):

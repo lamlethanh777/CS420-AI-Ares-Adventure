@@ -1,10 +1,10 @@
 DFS
 No solution found.
 BFS
-No solution found.
+Steps: 16, Cost: 711, Node: 15357, Time (ms): 535.32, Memory (MB): 7.73
+uLulDrrRRRRRRurD
 UCS
-Steps: 24, Cost: 429, Node: 37304, Time (ms): 1859.99, Memory (MB): 16.18
-lluRurrDrdLLLuRRRRRRRurD
+No solution found.
 A*
-Steps: 24, Cost: 429, Node: 3263, Time (ms): 173.74, Memory (MB): 1.96
+Steps: 24, Cost: 429, Node: 3263, Time (ms): 184.65, Memory (MB): 1.93
 lluRurrDrdLLLuRRRRRRRurD
