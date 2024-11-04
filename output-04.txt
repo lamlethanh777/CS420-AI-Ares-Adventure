@@ -10,3 +10,27 @@ luuRRUUdldlddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
 A*
 Steps: 56, Cost: 267, Node: 11148, Time (ms): 652.81, Memory (MB): 6.05
 luuRRUUdldlddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+A*
+Steps: 56, Cost: 267, Node: 11148, Time (ms): 647.39, Memory (MB): 5.94
+luuRRUUdldlddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+DFS
+Steps: 268, Cost: 909, Node: 1377104, Time (ms): 50171.57, Memory (MB): 573.98
+luuRRUlldddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRurUldldddrrrUdllluururrDLulldddrrrUdlUUUrDlddrruLdllluuRRllddrrUdlluururrDLddrruLdllluuRRllddrrUdlluururrDullldddrruUruLdllddrrrruLdllluurUrrdddlUruLrddllluuRRllddrrruUlluU
+DFS
+Steps: 268, Cost: 909, Node: 1377104, Time (ms): 49351.92, Memory (MB): 574.09
+luuRRUlldddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRurUldldddrrrUdllluururrDLulldddrrrUdlUUUrDlddrruLdllluuRRllddrrUdlluururrDLddrruLdllluuRRllddrrUdlluururrDullldddrruUruLdllddrrrruLdllluurUrrdddlUruLrddllluuRRllddrrruUlluU
+DFS
+Steps: 268, Cost: 909, Node: 1377104, Time (ms): 50296.36, Memory (MB): 573.98
+luuRRUlldddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRurUldldddrrrUdllluururrDLulldddrrrUdlUUUrDlddrruLdllluuRRllddrrUdlluururrDLddrruLdllluuRRllddrrUdlluururrDullldddrruUruLdllddrrrruLdllluurUrrdddlUruLrddllluuRRllddrrruUlluU
+A*
+Steps: 38, Cost: 225, Node: 3068, Time (ms): 154.46, Memory (MB): 1.59
+luuRRUUddllddrrUUUdddrruLdlUUdrUuLdlUU
+DFS
+Steps: 264, Cost: 1497, Node: 119626, Time (ms): 3933.89, Memory (MB): 48.37
+rrUdllluuRlddrrruULUrdddllluuRRllddrrUdlluururrDLddrruLdllluuRRllddrrUdlluururrDLddrUldlluuurrUldldRlddrruUluurDrDLddrruLdllluuRRllddrrUdlluururrDLddrruLdlUUrddllluuRlddrrruuuLrdLrddllluuRRlUrrDlllddrrrruLdllluurruuulDrdrdddllluuuRldddrrruulUrdddlUUruLrddldlluurUU
+BFS
+Steps: 34, Cost: 267, Node: 127759, Time (ms): 4220.43, Memory (MB): 59.18
+rUdrUUuLrddlUUUddddlluuRUUdrrddlUU
+A*
+Steps: 56, Cost: 267, Node: 6623, Time (ms): 365.59, Memory (MB): 3.24
+luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU

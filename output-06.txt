@@ -10,3 +10,40 @@ rruulDuullldddrrRurrrddlldlUrUUluulldlddrrRlllddrUluuururrddrDllLdlUUdrrruuulldD
 A*
 Steps: 100, Cost: 1684, Node: 459490, Time (ms): 35764.22, Memory (MB): 250.08
 rruulDuullldddrrRurrrddlldlUrUUluulldlddrrRlllddrUluuururrddrDllLdlUUdrrruuulldDuurrrDlddlLulDuruulD
+A*
+Steps: 100, Cost: 1684, Node: 473514, Time (ms): 38197.81, Memory (MB): 251.88
+lluurDuurrdrddllLulllddrrdrUlUUruurrdrddllLrrrddlUruuulullddlDrrRdrUUdllluuurrdDuulllDrddrRurDuluurD
+A*
+No solution found.
+A*
+Steps: 100, Cost: 1684, Node: 481741, Time (ms): 39622.59, Memory (MB): 255.04
+lluurDuurrdrddllLulllddrrdrUlUUruurrdrddllLrrrddlUruuulullddlDrrRdrUUdllluuurrdDuulllDrddrRurDuluurD
+A*
+No solution found.
+A*
+No solution found.
+A*
+Steps: 100, Cost: 1684, Node: 473514, Time (ms): 39364.51, Memory (MB): 251.88
+lluurDuurrdrddllLulllddrrdrUlUUruurrdrddllLrrrddlUruuulullddlDrrRdrUUdllluuurrdDuulllDrddrRurDuluurD
+A*
+Steps: 100, Cost: 1684, Node: 226270, Time (ms): 17452.92, Memory (MB): 117.55
+rruulDuulldlddrrRurrrddlldlUrUUluulldlddrrRlllddrUluuururrddrDllLdlUUdrrruuulldDuurrrDlddlLulDruuulD
+A*
+Steps: 100, Cost: 1684, Node: 226270, Time (ms): 18243.37, Memory (MB): 117.55
+rruulDuulldlddrrRurrrddlldlUrUUluulldlddrrRlllddrUluuururrddrDllLdlUUdrrruuulldDuurrrDlddlLulDruuulD
+A*
+Steps: 100, Cost: 1684, Node: 226270, Time (ms): 17547.21, Memory (MB): 117.55
+rruulDuulldlddrrRurrrddlldlUrUUluulldlddrrRlllddrUluuururrddrDllLdlUUdrrruuulldDuurrrDlddlLulDruuulD
+A*
+No solution found.
+A*
+No solution found.
+A*
+Steps: 100, Cost: 1684, Node: 197693, Time (ms): 15958.09, Memory (MB): 95.88
+lluurDuurrdrddllLulllddrrdrUlUUruurrdrddllLrrrddlUruuulullddlDrrRdrUUdllluuurrdDuulllDrddrRurDluuurD
+A*
+Steps: 100, Cost: 1684, Node: 197693, Time (ms): 15010.63, Memory (MB): 95.76
+lluurDuurrdrddllLulllddrrdrUlUUruurrdrddllLrrrddlUruuulullddlDrrRdrUUdllluuurrdDuulllDrddrRurDluuurD
+A*
+Steps: 100, Cost: 1684, Node: 197693, Time (ms): 15049.91, Memory (MB): 95.76
+lluurDuurrdrddllLulllddrrdrUlUUruurrdrddllLrrrddlUruuulullddlDrrRdrUUdllluuurrdDuulllDrddrRurDluuurD

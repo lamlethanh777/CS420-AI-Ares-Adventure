@@ -37,7 +37,7 @@ class IOHandler:
             rock_weights = [int(weight) for weight in f.readline().strip().split()]
             maze = [[ch for ch in line.replace("\n", "")] for line in f]
             for line in maze:
-                print(line)
+                print("".join(line))
         return maze, rock_weights
 
     def write_metrics_result(self, result):
@@ -152,6 +152,23 @@ class Problem:
     def is_initial(self, state):
         return state.maze == self.initial.maze
 
+    def is_dead_corner(self, maze, rocks_map, x, y):
+        check_1 = maze[x][y] not in ("*", ".")
+        check_2 = maze[x + 1][y] == "#" or (x + 1, y) in rocks_map
+        check_3 = maze[x - 1][y] == "#" or (x - 1, y) in rocks_map
+        check_4 = maze[x][y + 1] == "#" or (x, y + 1) in rocks_map
+        check_5 = maze[x][y - 1] == "#" or (x, y - 1) in rocks_map
+
+        return check_1 and (
+            (check_2 and check_4)
+            or (check_3 and check_5)
+            or (check_2 and check_5)
+            or (check_3 and check_4)
+        )
+
+    def is_dead_lock(self, maze, rocks_map, x, y):
+        return self.is_dead_corner(maze, rocks_map, x, y)
+
     def result(self, state: State, movement: tuple):
         """
         Apply the movement to the given state and return the resulting state.
@@ -173,15 +190,19 @@ class Problem:
 
         if (new_x, new_y) in new_state.rocks_map:
             next_x, next_y = new_x + dx, new_y + dy
-            if (next_x, next_y) not in new_state.rocks_map and new_state.maze[next_x][
-                next_y
-            ] != "#":
+            weight = new_state.rocks_map.pop((new_x, new_y))
+            if (
+                (next_x, next_y) not in new_state.rocks_map
+                and new_state.maze[next_x][next_y] != "#"
+                and not self.is_dead_lock(
+                    new_state.maze, new_state.rocks_map, next_x, next_y
+                )
+            ):
                 new_state.player_pos = (new_x, new_y)
-                new_state.rocks_map[(next_x, next_y)] = new_state.rocks_map[
-                    (new_x, new_y)
-                ]
-                del new_state.rocks_map[(new_x, new_y)]
+                new_state.rocks_map[(next_x, next_y)] = weight
                 return new_state, True, new_state.rocks_map[(next_x, next_y)] + 1
+            else:
+                new_state.rocks_map[(new_x, new_y)] = weight
         elif new_state.maze[new_x][new_y] != "#":
             new_state.player_pos = (new_x, new_y)
             return new_state, False, 1
@@ -497,9 +518,9 @@ class AStarSolver(Solver):
                 used_goals.add(closest_goal)
                 heuristic += min_distance * (rock_weight + 1)
 
-            # heuristic += abs(state.player_pos[0] - rock_pos[0]) + abs(
-            #     state.player_pos[1] - rock_pos[1]
-            # )
+            heuristic += abs(state.player_pos[0] - rock_pos[0]) + abs(
+                state.player_pos[1] - rock_pos[1]
+            )
 
         self.heuristic_calls += 1
         return heuristic
