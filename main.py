@@ -11,8 +11,9 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QDesktopWidget,
     QMessageBox,
+    QProgressDialog,
 )
-from PyQt5.QtCore import Qt, QTimer, QPoint
+from PyQt5.QtCore import Qt, QTimer, QPoint, QThread, pyqtSignal
 from PyQt5.QtGui import QPainter, QPixmap, QIcon
 from math import sqrt
 import heapq
@@ -250,6 +251,9 @@ class Solver:
             node = node.parent
 
         return path[::-1]
+
+    def get_result(self):
+        return self.result
 
 
 # endregion
@@ -493,9 +497,9 @@ class AStarSolver(Solver):
                 used_goals.add(closest_goal)
                 heuristic += min_distance * (rock_weight + 1)
 
-            heuristic += abs(state.player_pos[0] - rock_pos[0]) + abs(
-                state.player_pos[1] - rock_pos[1]
-            )
+            # heuristic += abs(state.player_pos[0] - rock_pos[0]) + abs(
+            #     state.player_pos[1] - rock_pos[1]
+            # )
 
         self.heuristic_calls += 1
         return heuristic
@@ -527,6 +531,20 @@ MAXIMUM_FPS = 100
 DEFAULT_FPS = 4
 
 
+class SolverThread(QThread):
+    finished = pyqtSignal(object)
+
+    def __init__(self, solver, problem):
+        super().__init__()
+        self.solver = solver
+        self.problem = problem
+
+    def run(self):
+        self.solver.solve_and_measure(self.problem)
+        self.finished.emit(self.solver)
+
+
+# region Sokoban Visualizer
 class SokobanVisualizer(QWidget):
     """Visualizer class for Sokoban puzzle game."""
 
@@ -612,7 +630,7 @@ class SokobanVisualizer(QWidget):
         count = 0
         for i, row in enumerate(self.maze):
             for j, cell in enumerate(row):
-                if cell == "$":
+                if cell == "$" or cell == "*":
                     self.rocks_map[(i, j)] = self.rock_weights[count]
                     count += 1
                 elif cell == "@":
@@ -802,6 +820,10 @@ class SokobanVisualizer(QWidget):
     # endregion
 
 
+# endregion
+
+
+# region App
 class App(QWidget):
     """Main application window for Sokoban puzzle solver and visualizer"""
 
@@ -955,19 +977,40 @@ class App(QWidget):
         try:
             problem = Problem(State(self.maze, self.rock_weights))
             solver = self.solvers[algorithm]
-            result = solver.solve_and_measure(problem)
 
-            # Store and update visualizer with results
-            self.results[algorithm] = result
-            if result:
-                self.visualizer.set_moves(result)
-                self.process_solver_results(solver)
-                self.enable_visualization(True)
-            else:
-                QMessageBox.information(self, "Information", "No solution found.")
-                self.enable_visualization(False)
+            # Show progress dialog with indeterminate progress bar
+            self.progress_dialog = QProgressDialog(
+                "Running solver, please wait...", None, 0, 0, self
+            )
+            self.progress_dialog.setWindowTitle("Please Wait")
+            self.progress_dialog.setWindowModality(Qt.WindowModal)
+            self.progress_dialog.setCancelButton(None)
+            self.progress_dialog.show()
+
+            # Run the solver in a separate thread
+            problem = Problem(State(self.maze, self.rock_weights))
+            self.solver_thread = SolverThread(solver, problem)
+            self.solver_thread.finished.connect(self.on_solver_finished)
+            self.solver_thread.start()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Solver failed: {str(e)}")
+
+    def on_solver_finished(self, solver):
+        """Handle solver completion"""
+        self.progress_dialog.close()
+        self.prepare_visualization(solver)
+        self.process_solver_results(solver)
+
+    def prepare_visualization(self, solver):
+        """Prepare visualization with solver results"""
+        result = solver.get_result()
+        if result:
+            self.results[self.algorithm_dropdown.currentText()] = result
+            self.visualizer.set_moves(result)
+            self.enable_visualization(True)
+        else:
+            QMessageBox.information(self, "Information", "No solution found.")
+            self.enable_visualization(False)
 
     # endregion
 
@@ -1067,6 +1110,9 @@ class App(QWidget):
         QMessageBox.information(self, "Information", "Map solved successfully.")
 
     # endregion
+
+
+# endregion
 
 
 def main():
