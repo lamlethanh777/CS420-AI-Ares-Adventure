@@ -1,3 +1,20 @@
 DFS
 Steps: 4, Cost: 105, Node: 5, Time (ms): 0.27, Memory (MB): 0.01
 RlLL
+DFS
+No solution found.
+DFS
+No solution found.
+DFS
+No solution found.
+DFS
+Steps: 4, Cost: 105, Node: 5, Time (ms): 0.29, Memory (MB): 0.01
+RlLL
+DFS
+No solution found.
+DFS
+Steps: 4, Cost: 105, Node: 5, Time (ms): 0.27, Memory (MB): 0.01
+RlLL
+DFS
+Steps: 4, Cost: 105, Node: 5, Time (ms): 0.42, Memory (MB): 0.01
+RlLL

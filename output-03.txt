@@ -55,3 +55,30 @@ ruurrrrdDDDDrrruLLdlUdDDlllldlUUUrdRRRdrD
 A*
 Steps: 41, Cost: 123, Node: 109037, Time (ms): 6153.23, Memory (MB): 64.17
 ruurrrrdDDDDrrruLLdlUdDDlllldlUUUrdRRRdrD
+A*
+Steps: 57, Cost: 138.99999999999994, Node: 5223, Time (ms): 328.41, Memory (MB): 4.20
+rrrdrrdddllLLullddRUUddRRRRurDuuuurrDrdLLuuuulDrddlDrddlD
+A*
+Steps: 41, Cost: 123, Node: 107803, Time (ms): 7771.43, Memory (MB): 82.15
+ruurrrrdDDDDrrruLLdlUdDDlllldlUUUrdRRRdrD
+A*
+Steps: 41, Cost: 123, Node: 109037, Time (ms): 7586.79, Memory (MB): 82.91
+ruurrrrdDDDDrrruLLdlUdDDlllldlUUUrdRRRdrD
+A*
+Steps: 41, Cost: 123, Node: 109037, Time (ms): 7762.39, Memory (MB): 82.99
+ruurrrrdDDDDrrruLLdlUdDDlllldlUUUrdRRRdrD
+A*
+Steps: 41, Cost: 123, Node: 109037, Time (ms): 37489.77, Memory (MB): 95.90
+ruurrrrdDDDDrrruLLdlUdDDlllldlUUUrdRRRdrD
+A*
+Steps: 41, Cost: 123, Node: 109037, Time (ms): 7285.74, Memory (MB): 96.02
+ruurrrrdDDDDrrruLLdlUdDDlllldlUUUrdRRRdrD
+A*
+Steps: 41, Cost: 123, Node: 109037, Time (ms): 7351.97, Memory (MB): 96.02
+ruurrrrdDDDDrrruLLdlUdDDlllldlUUUrdRRRdrD
+A*
+Steps: 41, Cost: 123, Node: 109037, Time (ms): 7641.57, Memory (MB): 82.91
+ruurrrrdDDDDrrruLLdlUdDDlllldlUUUrdRRRdrD
+A*
+Steps: 41, Cost: 123, Node: 109037, Time (ms): 7236.03, Memory (MB): 95.90
+ruurrrrdDDDDrrruLLdlUdDDlllldlUUUrdRRRdrD

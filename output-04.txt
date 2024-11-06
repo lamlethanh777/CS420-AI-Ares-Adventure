@@ -34,3 +34,51 @@ rUdrUUuLrddlUUUddddlluuRUUdrrddlUU
 A*
 Steps: 56, Cost: 267, Node: 6623, Time (ms): 365.59, Memory (MB): 3.24
 luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+A*
+No solution found.
+A*
+No solution found.
+A*
+No solution found.
+A*
+No solution found.
+A*
+No solution found.
+UCS
+No solution found.
+BFS
+No solution found.
+DFS
+No solution found.
+DFS
+No solution found.
+DFS
+Steps: 268, Cost: 909, Node: 1377104, Time (ms): 67486.52, Memory (MB): 731.69
+luuRRUlldddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRurUldldddrrrUdllluururrDLulldddrrrUdlUUUrDlddrruLdllluuRRllddrrUdlluururrDLddrruLdllluuRRllddrrUdlluururrDullldddrruUruLdllddrrrruLdllluurUrrdddlUruLrddllluuRRllddrrruUlluU
+DFS
+Steps: 268, Cost: 909, Node: 298417, Time (ms): 13976.31, Memory (MB): 152.82
+luuRRUlldddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRurUldldddrrrUdllluururrDLulldddrrrUdlUUUrDlddrruLdllluuRRllddrrUdlluururrDLddrruLdllluuRRllddrrUdlluururrDullldddrruUruLdllddrrrruLdllluurUrrdddlUruLrddllluuRRllddrrruUlluU
+A*
+Steps: 56, Cost: 267, Node: 6623, Time (ms): 476.79, Memory (MB): 3.97
+luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+A*
+Steps: 56, Cost: 267, Node: 6623, Time (ms): 3259.07, Memory (MB): 4.08
+luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+A*
+Steps: 56, Cost: 267, Node: 6623, Time (ms): 3118.46, Memory (MB): 4.85
+luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+A*
+Steps: 56, Cost: 267, Node: 6623, Time (ms): 449.84, Memory (MB): 4.85
+luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+A*
+Steps: 56, Cost: 267, Node: 6623, Time (ms): 462.35, Memory (MB): 4.85
+luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+A*
+Steps: 56, Cost: 267, Node: 6623, Time (ms): 453.58, Memory (MB): 4.85
+luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+A*
+Steps: 56, Cost: 267, Node: 6623, Time (ms): 500.62, Memory (MB): 4.08
+luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+A*
+Steps: 56, Cost: 267, Node: 6623, Time (ms): 451.89, Memory (MB): 4.85
+luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU

@@ -35,7 +35,7 @@ class IOHandler:
         print(f"Reading map from {self.input_file_name}...")
         with open(self.input_file_name, "r") as f:
             rock_weights = [int(weight) for weight in f.readline().strip().split()]
-            maze = [[ch for ch in line.replace("\n", "")] for line in f]
+            maze = [line.replace("\n", "") for line in f]
             for line in maze:
                 print("".join(line))
         return maze, rock_weights
@@ -63,6 +63,7 @@ class State:
             self.find_rocks(rock_weights) if rocks_map is None else rocks_map
         )
         self.goals = self.find_goals() if goals is None else goals
+        self.maze = self.get_map_wall()
 
     def __str__(self):
         return str(self.maze)
@@ -84,15 +85,25 @@ class State:
                 ):
                     rocks_map[(row_idx, col_idx)] = rock_weights[count]
                     count += 1
+
         return rocks_map
 
     def find_goals(self):
         goals = []
         for row_idx, row in enumerate(self.maze):
             for col_idx, _ in enumerate(row):
-                if self.maze[row_idx][col_idx] == ".":
+                if (
+                    self.maze[row_idx][col_idx] == "."
+                    or self.maze[row_idx][col_idx] == "*"
+                ):
                     goals.append((row_idx, col_idx))
         return goals
+
+    def get_map_wall(self):
+        return [
+            line.replace("*", ".").replace("$", " ").replace("+", ".").replace("@", " ")
+            for line in self.maze
+        ]
 
     def __hash__(self):
         player_pos = self.player_pos
@@ -108,10 +119,9 @@ class State:
         return False
 
     def copy(self):
-        new_player_pos = (self.player_pos[0], self.player_pos[1])
-        new_rocks_map = {k: v for k, v in self.rocks_map.items()}
-
-        return State(self.maze, None, new_player_pos, new_rocks_map, self.goals)
+        return State(
+            self.maze, None, self.player_pos, self.rocks_map.copy(), self.goals
+        )
 
 
 class Node:
@@ -135,6 +145,10 @@ class Node:
         return self.state == other.state
 
 
+t = 0
+times = 0
+
+
 class Problem:
     """Problem class for Sokoban puzzle game defines the initial state, goal and valid actions."""
 
@@ -144,20 +158,24 @@ class Problem:
         self.initial = initial
 
     def is_goal(self, state: State):
-        for goal in state.goals:
-            if goal not in state.rocks_map:
+        # TODO: check if all rocks are on goals
+        for rock_pos in state.rocks_map:
+            if state.maze[rock_pos[0]][rock_pos[1]] != ".":
                 return False
+        # for goal in state.goals:
+        #     if goal not in state.rocks_map:
+        #         return False
         return True
 
     def is_initial(self, state):
         return state.maze == self.initial.maze
 
-    def is_dead_corner(self, maze, rocks_map, x, y):
-        check_1 = maze[x][y] not in ("*", ".")
-        check_2 = maze[x + 1][y] == "#" or (x + 1, y) in rocks_map
-        check_3 = maze[x - 1][y] == "#" or (x - 1, y) in rocks_map
-        check_4 = maze[x][y + 1] == "#" or (x, y + 1) in rocks_map
-        check_5 = maze[x][y - 1] == "#" or (x, y - 1) in rocks_map
+    def is_box_in_dead_corner(self, maze, rocks_map, x, y):
+        check_1 = maze[x][y] != "."
+        check_2 = maze[x + 1][y] == "#"
+        check_3 = maze[x - 1][y] == "#"
+        check_4 = maze[x][y + 1] == "#"
+        check_5 = maze[x][y - 1] == "#"
 
         return check_1 and (
             (check_2 and check_4)
@@ -167,7 +185,7 @@ class Problem:
         )
 
     def is_dead_lock(self, maze, rocks_map, x, y):
-        return self.is_dead_corner(maze, rocks_map, x, y)
+        return self.is_box_in_dead_corner(maze, rocks_map, x, y)
 
     def result(self, state: State, movement: tuple):
         """
@@ -180,10 +198,13 @@ class Problem:
         Returns:
             tuple(State, bool, int): A tuple containing the new state object, a boolean (indicating whether the new state is valid), and the cost of moving. If the movement is invalid, returns (None, False).
         """
-        # s = time.time()
+        s = time.time()
         new_state = state.copy()
-        # e = time.time()
-        # print("copy", (e - s) * 1000)
+        global t
+        global times
+        times += 1
+        t += time.time() - s
+
         x, y = new_state.player_pos
         dx, dy = movement
         new_x, new_y = x + dx, y + dy
@@ -199,6 +220,7 @@ class Problem:
                 )
             ):
                 new_state.player_pos = (new_x, new_y)
+                # TODO: store an int instead of tuple
                 new_state.rocks_map[(next_x, next_y)] = weight
                 return new_state, True, new_state.rocks_map[(next_x, next_y)] + 1
             else:
@@ -523,7 +545,7 @@ class AStarSolver(Solver):
             )
 
         self.heuristic_calls += 1
-        return heuristic
+        return heuristic  # *1.2-1.6
 
     def trace_path(self, node):
         self.steps = node.steps
@@ -541,6 +563,9 @@ class AStarSolver(Solver):
             "Heuristic average time:",
             self.heuristic_measure * 1000 / self.heuristic_calls,
         )
+        print("Copy time:", t * 1000)
+        print("Copy calls:", times)
+        print("Average copy time:", t * 1000 / times)
 
         return path[::-1]
 
@@ -552,6 +577,7 @@ MAXIMUM_FPS = 100
 DEFAULT_FPS = 4
 
 
+# region SolverThread
 class SolverThread(QThread):
     finished = pyqtSignal(object)
 
@@ -563,6 +589,9 @@ class SolverThread(QThread):
     def run(self):
         self.solver.solve_and_measure(self.problem)
         self.finished.emit(self.solver)
+
+
+# endregion
 
 
 # region Sokoban Visualizer
@@ -992,7 +1021,6 @@ class App(QWidget):
 
     def run_solver(self):
         """Execute selected solver algorithm"""
-        self.update_map()
         algorithm = self.algorithm_dropdown.currentText()
 
         try:
@@ -1003,7 +1031,7 @@ class App(QWidget):
             self.progress_dialog = QProgressDialog(
                 "Running solver, please wait...", None, 0, 0, self
             )
-            self.progress_dialog.setWindowTitle("Please Wait")
+            self.progress_dialog.setWindowTitle("Running Solver")
             self.progress_dialog.setWindowModality(Qt.WindowModal)
             self.progress_dialog.setCancelButton(None)
             self.progress_dialog.show()
@@ -1019,8 +1047,8 @@ class App(QWidget):
     def on_solver_finished(self, solver):
         """Handle solver completion"""
         self.progress_dialog.close()
-        self.prepare_visualization(solver)
         self.process_solver_results(solver)
+        self.prepare_visualization(solver)
 
     def prepare_visualization(self, solver):
         """Prepare visualization with solver results"""
@@ -1029,6 +1057,7 @@ class App(QWidget):
             self.results[self.algorithm_dropdown.currentText()] = result
             self.visualizer.set_moves(result)
             self.enable_visualization(True)
+            QMessageBox.information(self, "Information", "Map solved successfully.")
         else:
             QMessageBox.information(self, "Information", "No solution found.")
             self.enable_visualization(False)
@@ -1128,7 +1157,6 @@ class App(QWidget):
         output_result = solver.output_metrics() + "\n"
         print(output_result)
         self.io_handler.write_metrics_result(output_result)
-        QMessageBox.information(self, "Information", "Map solved successfully.")
 
     # endregion
 
