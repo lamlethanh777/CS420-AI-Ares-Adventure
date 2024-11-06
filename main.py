@@ -152,7 +152,7 @@ times = 0
 class Problem:
     """Problem class for Sokoban puzzle game defines the initial state, goal and valid actions."""
 
-    actions = {"u": (-1, 0), "d": (1, 0), "l": (0, -1), "r": (0, 1)}
+    actions = (("u", (-1, 0)), ("l", (0, -1)), ("d", (1, 0)), ("r", (0, 1)))
 
     def __init__(self, initial: State):
         self.initial = initial
@@ -170,22 +170,22 @@ class Problem:
     def is_initial(self, state):
         return state.maze == self.initial.maze
 
-    def is_box_in_dead_corner(self, maze, rocks_map, x, y):
-        check_1 = maze[x][y] != "."
-        check_2 = maze[x + 1][y] == "#"
-        check_3 = maze[x - 1][y] == "#"
-        check_4 = maze[x][y + 1] == "#"
-        check_5 = maze[x][y - 1] == "#"
+    def is_box_in_dead_corner(self, maze, rocks_map, new_x, new_y, dx, dy):
+        if maze[new_x][new_y] == ".":
+            return False
 
-        return check_1 and (
-            (check_2 and check_4)
-            or (check_3 and check_5)
-            or (check_2 and check_5)
-            or (check_3 and check_4)
-        )
+        # Check orthogonal walls (up/down if moving left/right, left/right if moving up/down)
+        if dx != 0:  # Moving vertically
+            return (maze[new_x + dx][new_y] == "#") and (
+                (maze[new_x][new_y - 1] == "#") or (maze[new_x][new_y + 1] == "#")
+            )
+        else:  # Moving horizontally
+            return (maze[new_x][new_y + dy] == "#") and (
+                (maze[new_x - 1][new_y] == "#") or (maze[new_x + 1][new_y] == "#")
+            )
 
-    def is_dead_lock(self, maze, rocks_map, x, y):
-        return self.is_box_in_dead_corner(maze, rocks_map, x, y)
+    def is_dead_lock(self, maze, rocks_map, x, y, dx, dy):
+        return self.is_box_in_dead_corner(maze, rocks_map, x, y, dx, dy)
 
     def result(self, state: State, movement: tuple):
         """
@@ -193,43 +193,34 @@ class Problem:
 
         Args:
             state (State): The current state of the game, including the maze layout and player position.
-            movement (List[int]): A list containing two integers representing the movement in the x and y directions.
+            movement (tuple): A tuple containing two integers representing the movement in the x and y directions.
 
         Returns:
             tuple(State, bool, int): A tuple containing the new state object, a boolean (indicating whether the new state is valid), and the cost of moving. If the movement is invalid, returns (None, False).
         """
-        s = time.time()
         new_state = state.copy()
-        global t
-        global times
-        times += 1
-        t += time.time() - s
-
         x, y = new_state.player_pos
         dx, dy = movement
         new_x, new_y = x + dx, y + dy
 
         if (new_x, new_y) in new_state.rocks_map:
             next_x, next_y = new_x + dx, new_y + dy
-            weight = new_state.rocks_map.pop((new_x, new_y))
+            weight = new_state.rocks_map[(new_x, new_y)]
             if (
                 (next_x, next_y) not in new_state.rocks_map
                 and new_state.maze[next_x][next_y] != "#"
                 and not self.is_dead_lock(
-                    new_state.maze, new_state.rocks_map, next_x, next_y
+                    new_state.maze, new_state.rocks_map, next_x, next_y, dx, dy
                 )
             ):
                 new_state.player_pos = (new_x, new_y)
-                # TODO: store an int instead of tuple
                 new_state.rocks_map[(next_x, next_y)] = weight
-                return new_state, True, new_state.rocks_map[(next_x, next_y)] + 1
-            else:
-                new_state.rocks_map[(new_x, new_y)] = weight
+                del new_state.rocks_map[(new_x, new_y)]
+                return new_state, True, weight + 1
         elif new_state.maze[new_x][new_y] != "#":
             new_state.player_pos = (new_x, new_y)
             return new_state, False, 1
 
-        # Invalid move
         return None, False, 0
 
 
@@ -321,7 +312,7 @@ class DFSolver(Solver):
         while frontier:
             node = frontier.pop()
 
-            for action, movement in self.problem.actions.items():
+            for action, movement in self.problem.actions:
                 child_state, box_moved, moving_cost = self.problem.result(
                     node.state, movement
                 )
@@ -370,7 +361,7 @@ class BFSolver(Solver):
         while frontier:
             node = frontier.pop(0)
 
-            for action, movement in self.problem.actions.items():
+            for action, movement in self.problem.actions:
                 child_state, box_moved, moving_cost = self.problem.result(
                     node.state, movement
                 )
@@ -421,7 +412,7 @@ class UCSolver(Solver):
             if self.problem.is_goal(state):
                 return self.trace_path(node)
 
-            for action, movement in self.problem.actions.items():
+            for action, movement in self.problem.actions:
                 child_state, box_moved, moving_cost = self.problem.result(
                     node.state, movement
                 )
@@ -475,7 +466,7 @@ class AStarSolver(Solver):
             if self.problem.is_goal(state):
                 return self.trace_path(node)
 
-            for action, movement in self.problem.actions.items():
+            for action, movement in self.problem.actions:
                 child_state, box_moved, moving_cost = self.problem.result(
                     node.state, movement
                 )
@@ -556,16 +547,6 @@ class AStarSolver(Solver):
         while node.parent:
             path.append(node.action)
             node = node.parent
-
-        print("Heuristic calculation time:", self.heuristic_measure * 1000)
-        print("Heuristic calls:", self.heuristic_calls)
-        print(
-            "Heuristic average time:",
-            self.heuristic_measure * 1000 / self.heuristic_calls,
-        )
-        print("Copy time:", t * 1000)
-        print("Copy calls:", times)
-        print("Average copy time:", t * 1000 / times)
 
         return path[::-1]
 

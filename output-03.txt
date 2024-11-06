@@ -82,3 +82,6 @@ ruurrrrdDDDDrrruLLdlUdDDlllldlUUUrdRRRdrD
 A*
 Steps: 41, Cost: 123, Node: 109037, Time (ms): 7236.03, Memory (MB): 95.90
 ruurrrrdDDDDrrruLLdlUdDDlllldlUUUrdRRRdrD
+A*
+Steps: 41, Cost: 123, Node: 109037, Time (ms): 20270.95, Memory (MB): 121.30
+ruurrrrdDDDDrrruLLdlUdDDlllldlUUUrdRRRdrD

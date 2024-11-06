@@ -46,3 +46,6 @@ uurDrdLLLUluRRRRRRRRurDD
 DFS
 Steps: 85, Cost: 792, Node: 509, Time (ms): 19.04, Memory (MB): 0.32
 rrrrrrruullllllllldRdrrrrrrrruulllllllDRRRRRRllllllldRRRRRlllllluurrrrrrrrrDldLLLLLLL
+DFS
+Steps: 49, Cost: 744, Node: 167, Time (ms): 4.31, Memory (MB): 0.09
+rrrrrrruullllllDrrrrrruullllllldlDrdRRRRRRllllllL

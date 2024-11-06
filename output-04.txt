@@ -82,3 +82,15 @@ luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
 A*
 Steps: 56, Cost: 267, Node: 6623, Time (ms): 451.89, Memory (MB): 4.85
 luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+A*
+Steps: 56, Cost: 267, Node: 6623, Time (ms): 504.31, Memory (MB): 4.85
+luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+A*
+Steps: 56, Cost: 267, Node: 6623, Time (ms): 504.23, Memory (MB): 4.85
+luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+DFS
+Steps: 302, Cost: 1547, Node: 296315, Time (ms): 14219.45, Memory (MB): 187.87
+luuRRUdllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRurUdrdLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUUddrruLdllluurrUrDlllddrrrUdlUdlluururrDLddrruLdllluuRRllddrrUdlluururrDLddrruLdlUUrddllluuRlddrrruuuLrdddllluurRdrUddllluurUU
+BFS
+Steps: 56, Cost: 267, Node: 52221, Time (ms): 2434.91, Memory (MB): 35.48
+luuRRUUldldddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
