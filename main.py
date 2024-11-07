@@ -670,7 +670,7 @@ class SokobanVisualizer(QWidget):
         self.update_player_direction("d")
 
         tile_size = int(sqrt(800 * 600 / (self.width * self.height)))
-        self.tile_size = 40 if tile_size > 40 or tile_size < 30 else tile_size
+        self.tile_size = 20 if tile_size > 20 or tile_size < 10 else tile_size
 
         if self.tile_size != 40:
             self.rescale_images()
