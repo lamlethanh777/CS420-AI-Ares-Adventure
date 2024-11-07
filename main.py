@@ -19,6 +19,7 @@ from math import sqrt
 import heapq
 import time
 import tracemalloc
+from line_profiler import profile
 
 
 # region IO Handler
@@ -55,7 +56,13 @@ class State:
     """State class for storing the state of the Sokoban puzzle game."""
 
     def __init__(
-        self, maze, rock_weights=None, player_pos=None, rocks_map=None, goals=None
+        self,
+        maze,
+        rock_weights=None,
+        player_pos=None,
+        rocks_map=None,
+        goals=None,
+        unreachable_positions=None,
     ):
         self.maze = maze
         self.player_pos = self.find_player() if player_pos is None else player_pos
@@ -64,9 +71,62 @@ class State:
         )
         self.goals = self.find_goals() if goals is None else goals
         self.maze = self.get_map_wall()
+        self.unreachable_positions = (
+            self.find_unreachable_positions()
+            if unreachable_positions is None
+            else unreachable_positions
+        )
 
     def __str__(self):
         return str(self.maze)
+
+    def find_unreachable_positions(self):
+        """
+        For every goal square, perform reverse BFS by pulling the box from the goal to every possible square.
+        """
+        maze = self.maze
+        height = len(maze)
+        width = len(maze[0])
+
+        all_positions = set()
+        walls = set()
+        for i, row in enumerate(maze):
+            for j, cell in enumerate(row):
+                if cell == "#":
+                    walls.add((i, j))
+                else:
+                    all_positions.add((i, j))
+
+        reachable_positions = set()
+        for goal in self.goals:
+            visited = set()
+            queue = [goal]
+
+            while queue:
+                box_pos = queue.pop(0)
+                if box_pos in visited:
+                    continue
+                visited.add(box_pos)
+                reachable_positions.add(box_pos)
+                x, y = box_pos
+                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    prev_box_x, prev_box_y = x - dx, y - dy
+                    player_x, player_y = x - 2 * dx, y - 2 * dy
+
+                    if (
+                        0 <= prev_box_x < height
+                        and 0 <= prev_box_y < width
+                        and 0 <= player_x < height
+                        and 0 <= player_y < width
+                    ):
+
+                        if (
+                            maze[prev_box_x][prev_box_y] != "#"
+                            and maze[player_x][player_y] != "#"
+                        ):
+
+                            queue.append((prev_box_x, prev_box_y))
+        return all_positions - reachable_positions
 
     def find_player(self):
         for row_idx, row in enumerate(self.maze):
@@ -128,6 +188,7 @@ class State:
             self.player_pos,
             self.rocks_map.copy(),
             self.goals,
+            self.unreachable_positions,
         )
 
 
@@ -175,22 +236,8 @@ class Problem:
     def is_initial(self, state):
         return state.maze == self.initial.maze
 
-    def is_box_in_dead_corner(self, maze, rocks_map, new_x, new_y, dx, dy):
-        if maze[new_x][new_y] == ".":
-            return False
-
-        # Check orthogonal walls (up/down if moving left/right, left/right if moving up/down)
-        if dx != 0:  # Moving vertically
-            return (maze[new_x + dx][new_y] == "#") and (
-                (maze[new_x][new_y - 1] == "#") or (maze[new_x][new_y + 1] == "#")
-            )
-        else:  # Moving horizontally
-            return (maze[new_x][new_y + dy] == "#") and (
-                (maze[new_x - 1][new_y] == "#") or (maze[new_x + 1][new_y] == "#")
-            )
-
-    def is_dead_lock(self, maze, rocks_map, x, y, dx, dy):
-        return self.is_box_in_dead_corner(maze, rocks_map, x, y, dx, dy)
+    def is_dead_lock(self, state, x, y, dx, dy):
+        return (x, y) in state.unreachable_positions
 
     def result(self, state: State, movement: tuple):
         """
@@ -214,9 +261,7 @@ class Problem:
             if (
                 (next_x, next_y) not in new_state.rocks_map
                 and new_state.maze[next_x][next_y] != "#"
-                and not self.is_dead_lock(
-                    new_state.maze, new_state.rocks_map, next_x, next_y, dx, dy
-                )
+                and not self.is_dead_lock(new_state, next_x, next_y, dx, dy)
             ):
                 new_state.player_pos = (new_x, new_y)
                 new_state.rocks_map[(next_x, next_y)] = weight
@@ -318,7 +363,7 @@ class DFSolver(Solver):
             node = frontier.pop()
 
             for action, movement in self.problem.actions:
-                child_state, box_moved, moving_cost = self.problem.result(
+                child_state, rock_moved, moving_cost = self.problem.result(
                     node.state, movement
                 )
                 if child_state is None:
@@ -328,7 +373,7 @@ class DFSolver(Solver):
                     child_node = Node(
                         child_state,
                         node,
-                        action.upper() if box_moved else action,
+                        action.upper() if rock_moved else action,
                         node.path_cost + moving_cost,
                     )
 
@@ -365,7 +410,7 @@ class BFSolver(Solver):
             node = frontier.pop(0)
 
             for action, movement in self.problem.actions:
-                child_state, box_moved, moving_cost = self.problem.result(
+                child_state, rock_moved, moving_cost = self.problem.result(
                     node.state, movement
                 )
                 if child_state is None:
@@ -377,7 +422,7 @@ class BFSolver(Solver):
                     child_node = Node(
                         child_state,
                         node,
-                        action.upper() if box_moved else action,
+                        action.upper() if rock_moved else action,
                         child_cost,
                     )
                     if self.problem.is_goal(child_state):
@@ -414,7 +459,7 @@ class UCSolver(Solver):
                 return self.trace_path(node)
 
             for action, movement in self.problem.actions:
-                child_state, box_moved, moving_cost = self.problem.result(
+                child_state, rock_moved, moving_cost = self.problem.result(
                     node.state, movement
                 )
                 if child_state is None:
@@ -426,7 +471,7 @@ class UCSolver(Solver):
                     child_node = Node(
                         child_state,
                         node,
-                        action.upper() if box_moved else action,
+                        action.upper() if rock_moved else action,
                         child_cost,
                     )
                     reached[child_state] = child_cost
@@ -443,10 +488,8 @@ class UCSolver(Solver):
 class AStarSolver(Solver):
     def __init__(self):
         super().__init__("A*")
-        self.heuristic_measure = 0
-        self.heuristic_start = 0
-        self.heuristic_calls = 0
 
+    @profile
     def solve(self):
         node = Node(self.problem.initial, None, None, 0)
         frontier = []
@@ -466,7 +509,7 @@ class AStarSolver(Solver):
                 return self.trace_path(node)
 
             for action, movement in self.problem.actions:
-                child_state, box_moved, moving_cost = self.problem.result(
+                child_state, rock_moved, moving_cost = self.problem.result(
                     node.state, movement
                 )
                 if child_state is None:
@@ -474,13 +517,12 @@ class AStarSolver(Solver):
 
                 is_child_reached_before = child_state in reached
                 if not is_child_reached_before:
-                    self.heuristic_start = time.time()
-                    heuristic[child_state] = self.heuristic_cost(child_state)
-                    self.heuristic_measure += time.time() - self.heuristic_start
+                    h = self.heuristic_cost(child_state)
+                    heuristic[child_state] = h
+                else:
+                    h = heuristic[child_state]
 
-                child_combined_cost = (
-                    node.path_cost + moving_cost + heuristic[child_state]
-                )
+                child_combined_cost = node.path_cost + moving_cost + h
 
                 if (
                     not is_child_reached_before
@@ -489,8 +531,8 @@ class AStarSolver(Solver):
                     child_node = Node(
                         child_state,
                         node,
-                        action.upper() if box_moved else action,
-                        child_combined_cost - heuristic[child_state],
+                        action.upper() if rock_moved else action,
+                        child_combined_cost - h,
                     )
                     reached[child_state] = child_combined_cost
                     heapq.heappush(frontier, (child_combined_cost, child_node))
@@ -517,6 +559,10 @@ class AStarSolver(Solver):
             min_distance = float("inf")
             closest_goal = None
 
+            if state.maze[rock_pos[0]][rock_pos[1]] == ".":
+                used_goals.add(rock_pos)
+                continue
+
             for goal in goals:
                 if goal not in used_goals:
                     distance = abs(rock_pos[0] - goal[0]) + abs(rock_pos[1] - goal[1])
@@ -528,11 +574,12 @@ class AStarSolver(Solver):
                 used_goals.add(closest_goal)
                 heuristic += min_distance * (rock_weight + 1)
 
-            heuristic += abs(state.player_pos[0] - rock_pos[0]) + abs(
-                state.player_pos[1] - rock_pos[1]
+            heuristic += (
+                abs(state.player_pos[0] - rock_pos[0])
+                + abs(state.player_pos[1] - rock_pos[1])
+                - 1
             )
 
-        self.heuristic_calls += 1
         return heuristic  # *1.2-1.6
 
 
@@ -681,10 +728,10 @@ class SokobanVisualizer(QWidget):
             self.tile_size = 35
         if tile_size > 30:
             self.tile_size = 30
-        elif tile_size < 10:
-            self.tile_size = 10
-        elif tile_size < 20:
+        elif tile_size > 20:
             self.tile_size = 20
+        elif tile_size > 10:
+            self.tile_size = 10
         else:
             self.tile_size = tile_size
         print(tile_size)
@@ -692,8 +739,7 @@ class SokobanVisualizer(QWidget):
         self.setMinimumSize(self.width * self.tile_size, self.height * self.tile_size)
         self.update_player_direction("d")
 
-        if self.tile_size != 40:
-            self.rescale_images()
+        self.rescale_images()
 
     def paintEvent(self, event):
         """Handle paint events for the widget."""

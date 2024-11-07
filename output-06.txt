@@ -129,3 +129,6 @@ drruulullDDrddlldLrurrdLruurruulullddDrddlLrruurruulullddLrrdddlluRdrUluRlulLrru
 BFS
 Steps: 146, Cost: 2076, Node: 91196, Time (ms): 9124.91, Memory (MB): 65.61
 lddldLrururrruulullDDDrddLLuRdrUluuLLulldRRRllddlddrUUUddRRurrdLLLruruUrDrruulullDDDullulldRRRllddlddrUUUddrrrrULuUrDrruulullDDllulldRRRlldddrrrrU
+A*
+Steps: 146, Cost: 2076, Node: 73645, Time (ms): 13185.65, Memory (MB): 56.56
+lddldLrururrruulullDDDrddLLuRdrUluuLLulldRRRllddlddrUUUddRRurrdLLLruruUrDrruulullDDDullulldRRRllddlddrUUUddrrrrULuUrDrruulullDDllulldRRRlldddrrrrU

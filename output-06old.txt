@@ -1,0 +1,39 @@
+A*
+Steps: 100, Cost: 1684, Node: 281990, Time (ms): 21063.76, Memory (MB): 207.37
+rruulDuulldlddrrRurrrddlldlUrUUluulldlddrrRlllddrUluuururrddrDllLdlUUdrrruuulldDuurrrDlddlLulDuruulD
+A*
+Steps: 100, Cost: 1684, Node: 226244, Time (ms): 16956.74, Memory (MB): 175.20
+rruulDuulldlddrrRurrrddlldlUrUUluulldlddrrRlllddrUluuururrddrDllLdlUUdrrruuulldDuurrrDlddlLulDuruulD
+A*
+Steps: 100, Cost: 1684, Node: 226244, Time (ms): 54091.98, Memory (MB): 175.19
+rruulDuulldlddrrRurrrddlldlUrUUluulldlddrrRlllddrUluuururrddrDllLdlUUdrrruuulldDuurrrDlddlLulDuruulD
+A*
+Steps: 100, Cost: 1684, Node: 226244, Time (ms): 17407.94, Memory (MB): 175.20
+rruulDuulldlddrrRurrrddlldlUrUUluulldlddrrRlllddrUluuururrddrDllLdlUUdrrruuulldDuurrrDlddlLulDuruulD
+A*
+Steps: 100, Cost: 1684, Node: 281990, Time (ms): 21173.97, Memory (MB): 207.48
+rruulDuulldlddrrRurrrddlldlUrUUluulldlddrrRlllddrUluuururrddrDllLdlUUdrrruuulldDuurrrDlddlLulDuruulD
+A*
+Steps: 112, Cost: 1894, Node: 81715, Time (ms): 5202.61, Memory (MB): 52.28
+rrddlUruuululldlddrrRlllddrUluuururrdrdDllLdlUUdrrrruululldDuurrdrddllLulDuruurrdDuulllDrddrRdRUUrrddLruullluurD
+A*
+Steps: 112, Cost: 1894, Node: 71508, Time (ms): 4475.28, Memory (MB): 42.71
+llddrUluuururrdrddllLrrrddlUruuululldldDrrRdrUUdlllluururrdDuulldlddrrRurDuluulldDuurrrDlddlLdLUUllddRluurrruulD
+A*
+Steps: 100, Cost: 1684, Node: 163614, Time (ms): 11516.24, Memory (MB): 118.29
+lluurDuurrdrddllLulllddrrdrUlUUruurrdrddllLrrrddlUruuulullddlDrrRdrUUdllluuurrdDuulllDrddrRurDuluurD
+A*
+Steps: 100, Cost: 1684, Node: 163614, Time (ms): 92430.54, Memory (MB): 118.29
+lluurDuurrdrddllLulllddrrdrUlUUruurrdrddllLrrrddlUruuulullddlDrrRdrUUdllluuurrdDuulllDrddrRurDuluurD
+A*
+Steps: 100, Cost: 1684, Node: 137115, Time (ms): 24085.73, Memory (MB): 103.57
+lluurDuurrdrddllLulllddrrdrUlUUruurrdrddllLrrrddlUruuulullddlDrrRdrUUdllluuurrdDuulllDrddrRurDuluurD
+A*
+Steps: 100, Cost: 1684, Node: 137115, Time (ms): 25474.82, Memory (MB): 103.46
+lluurDuurrdrddllLulllddrrdrUlUUruurrdrddllLrrrddlUruuulullddlDrrRdrUUdllluuurrdDuulllDrddrRurDuluurD
+A*
+Steps: 100, Cost: 1684, Node: 163614, Time (ms): 29539.83, Memory (MB): 118.29
+lluurDuurrdrddllLulllddrrdrUlUUruurrdrddllLrrrddlUruuulullddlDrrRdrUUdllluuurrdDuulllDrddrRurDuluurD
+A*
+Steps: 100, Cost: 1684, Node: 163614, Time (ms): 29859.10, Memory (MB): 118.18
+lluurDuurrdrddllLulllddrrdrUlUUruurrdrddllLrrrddlUruuulullddlDrrRdrUUdllluuurrdDuulllDrddrRurDuluurD
