@@ -120,20 +120,22 @@ class State:
 
     def copy(self):
         return State(
-            self.maze, None, self.player_pos, self.rocks_map.copy(), self.goals
+            self.maze,
+            None,
+            self.player_pos,
+            self.rocks_map.copy(),
+            self.goals,
         )
 
 
 class Node:
     """Node class for search algorithms."""
 
-    def __init__(self, state, parent, action, path_cost, weight_pushed, steps):
+    def __init__(self, state, parent, action, path_cost):
         self.state = state
         self.parent = parent
         self.action = action
         self.path_cost = path_cost
-        self.weight_pushed = weight_pushed
-        self.steps = steps
 
     def __hash__(self):
         return hash(self.state)
@@ -275,14 +277,14 @@ class Solver:
         return f"{self.algorithm_name}\nSteps: {self.steps}, Cost: {self.total_cost}, Node: {self.nodes_generated}, Time (ms): {time_taken:.2f}, Memory (MB): {memory_used:.2f}\n{self.result}"
 
     def trace_path(self, node):
-        self.steps = node.steps
-        self.total_weight_pushed = node.weight_pushed
+        self.steps = 0
         self.total_cost = node.path_cost
 
         path = []
         while node.parent:
             path.append(node.action)
             node = node.parent
+            self.steps += 1
 
         return path[::-1]
 
@@ -299,7 +301,7 @@ class DFSolver(Solver):
         super().__init__("DFS")
 
     def solve(self):
-        node = Node(self.problem.initial, None, None, 0, 0, 0)
+        node = Node(self.problem.initial, None, None, 0)
         if self.problem.is_goal(node.state):
             return self.trace_path(node)
 
@@ -325,8 +327,6 @@ class DFSolver(Solver):
                         node,
                         action.upper() if box_moved else action,
                         node.path_cost + moving_cost,
-                        node.weight_pushed + moving_cost - 1,
-                        node.steps + 1,
                     )
 
                     if self.problem.is_goal(child_state):
@@ -347,7 +347,7 @@ class BFSolver(Solver):
         super().__init__("BFS")
 
     def solve(self):
-        node = Node(self.problem.initial, None, None, 0, 0, 0)
+        node = Node(self.problem.initial, None, None, 0)
         if self.problem.is_goal(node.state):
             return self.trace_path(node)
 
@@ -376,8 +376,6 @@ class BFSolver(Solver):
                         node,
                         action.upper() if box_moved else action,
                         child_cost,
-                        node.weight_pushed + moving_cost - 1,
-                        node.steps + 1,
                     )
                     if self.problem.is_goal(child_state):
                         return self.trace_path(child_node)
@@ -398,7 +396,7 @@ class UCSolver(Solver):
         super().__init__("UCS")
 
     def solve(self):
-        node = Node(self.problem.initial, None, None, 0, 0, 0)
+        node = Node(self.problem.initial, None, None, 0)
         frontier = []
         reached = {}  # cost of reaching the node
         self.nodes_generated = 1
@@ -427,8 +425,6 @@ class UCSolver(Solver):
                         node,
                         action.upper() if box_moved else action,
                         child_cost,
-                        node.weight_pushed + moving_cost - 1,
-                        node.steps + 1,
                     )
                     reached[child_state] = child_cost
                     heapq.heappush(frontier, (child_cost, child_node))
@@ -449,7 +445,7 @@ class AStarSolver(Solver):
         self.heuristic_calls = 0
 
     def solve(self):
-        node = Node(self.problem.initial, None, None, 0, 0, 0)
+        node = Node(self.problem.initial, None, None, 0)
         frontier = []
         reached = {}  # combined cost of reaching the node and heuristic cost
         heuristic = {}
@@ -492,8 +488,6 @@ class AStarSolver(Solver):
                         node,
                         action.upper() if box_moved else action,
                         child_combined_cost - heuristic[child_state],
-                        node.weight_pushed + moving_cost - 1,
-                        node.steps + 1,
                     )
                     reached[child_state] = child_combined_cost
                     heapq.heappush(frontier, (child_combined_cost, child_node))
@@ -537,18 +531,6 @@ class AStarSolver(Solver):
 
         self.heuristic_calls += 1
         return heuristic  # *1.2-1.6
-
-    def trace_path(self, node):
-        self.steps = node.steps
-        self.total_weight_pushed = node.weight_pushed
-        self.total_cost = node.path_cost
-
-        path = []
-        while node.parent:
-            path.append(node.action)
-            node = node.parent
-
-        return path[::-1]
 
 
 # endregion
