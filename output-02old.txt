@@ -1,0 +1,6 @@
+DFS
+Steps: 49, Cost: 744, Node: 167, Time (ms): 15.26, Memory (MB): 0.11
+rrrrrrruullllllDrrrrrruullllllldlDrdRRRRRRllllllL
+DFS
+Steps: 49, Cost: 744, Node: 167, Time (ms): 10.11, Memory (MB): 0.11
+rrrrrrruullllllDrrrrrruullllllldlDrdRRRRRRllllllL

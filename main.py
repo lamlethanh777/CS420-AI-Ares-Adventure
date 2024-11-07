@@ -71,7 +71,10 @@ class State:
     def find_player(self):
         for row_idx, row in enumerate(self.maze):
             for col_idx, _ in enumerate(row):
-                if self.maze[row_idx][col_idx] == "@":
+                if (
+                    self.maze[row_idx][col_idx] == "@"
+                    or self.maze[row_idx][col_idx] == "+"
+                ):
                     return row_idx, col_idx
 
     def find_rocks(self, rock_weights):
@@ -611,7 +614,7 @@ class SokobanVisualizer(QWidget):
         self.correct_box_image = self.correct_box_image_orig.scaled(
             self.tile_size, self.tile_size
         )
-        self.goal_image = self.goal_image_orig
+        self.goal_image = self.goal_image_orig.scaled(self.tile_size, self.tile_size)
         self.floor_image = self.floor_image_orig.scaled(self.tile_size, self.tile_size)
         self.player_images = {
             direction: image.scaledToHeight(self.tile_size)
@@ -624,6 +627,7 @@ class SokobanVisualizer(QWidget):
     def change_map(self, maze, rock_weights):
         """Update the current map with new maze and rock weights."""
         self.maze = maze
+        self.base_maze = maze
         self.rock_weights = rock_weights
         self.reset_map()
         self.prepare_ui()
@@ -641,18 +645,22 @@ class SokobanVisualizer(QWidget):
         """Load maze data including rocks and player positions."""
         self.rocks_map = {}
         count = 0
-        for i, row in enumerate(self.maze):
+        for i, row in enumerate(self.base_maze):
             for j, cell in enumerate(row):
                 if cell == "$" or cell == "*":
                     self.rocks_map[(i, j)] = self.rock_weights[count]
                     count += 1
-                elif cell == "@":
+                elif cell == "@" or cell == "+":
                     self.player_pos = (i, j)
         self.goals = [
             (i, j)
-            for i, row in enumerate(self.maze)
+            for i, row in enumerate(self.base_maze)
             for j, cell in enumerate(row)
-            if cell == "."
+            if cell == "." or cell == "*"
+        ]
+        self.maze = [
+            line.replace("*", ".").replace("$", " ").replace("+", ".").replace("@", " ")
+            for line in self.base_maze
         ]
 
     # endregion
@@ -664,13 +672,25 @@ class SokobanVisualizer(QWidget):
             return
 
         self.reset_map()
-        self.width = max(len(row) for row in self.maze) * self.tile_size
-        self.height = len(self.maze) * self.tile_size
-        self.setMinimumSize(self.width, self.height)
-        self.update_player_direction("d")
+
+        self.width = max(len(row) for row in self.maze)
+        self.height = len(self.maze)
 
         tile_size = int(sqrt(800 * 600 / (self.width * self.height)))
-        self.tile_size = 20 if tile_size > 20 or tile_size < 10 else tile_size
+        if tile_size > 35:
+            self.tile_size = 35
+        if tile_size > 30:
+            self.tile_size = 30
+        elif tile_size < 10:
+            self.tile_size = 10
+        elif tile_size < 20:
+            self.tile_size = 20
+        else:
+            self.tile_size = tile_size
+        print(tile_size)
+
+        self.setMinimumSize(self.width * self.tile_size, self.height * self.tile_size)
+        self.update_player_direction("d")
 
         if self.tile_size != 40:
             self.rescale_images()
@@ -682,19 +702,21 @@ class SokobanVisualizer(QWidget):
             for j in range(len(self.maze[i])):
                 if self.maze[i][j] == "#":
                     self.paint_cell(j, i, "#", painter)
-                elif self.maze[i][j] == "." or self.maze[i][j] == "*":
+                elif self.maze[i][j] == ".":
                     self.paint_cell(j, i, ".", painter)
-
-        self.paint_cell(self.player_pos[1], self.player_pos[0], "@", painter)
 
         for rock_pos, _ in self.rocks_map.items():
             cell = self.maze[rock_pos[0]][rock_pos[1]]
             self.paint_cell(
                 rock_pos[1],
                 rock_pos[0],
-                "*" if cell == "." or cell == "*" else "$",
+                "*" if cell == "." else "$",
                 painter,
             )
+
+        y, x = self.player_pos
+
+        self.paint_cell(x, y, "+" if self.maze[y][x] == "." else "@", painter)
         painter.end()
 
     def paint_cell(self, x, y, cell, painter):
