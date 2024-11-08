@@ -11,3 +11,6 @@ No solution found.
 A*
 Steps: 51, Cost: 133, Node: 6126, Time (ms): 280.88, Memory (MB): 5.33
 rrrdrrrrDDrdLLuuuuulDrdddddllluLdlUruLdlUdDDldRRRRR
+A*
+Steps: 51, Cost: 133, Node: 6031, Time (ms): 220.67, Memory (MB): 4.06
+rrrdrrrrDDrdLLuuuuulDrdddddllluLdlUruLdlUdDDldRRRRR

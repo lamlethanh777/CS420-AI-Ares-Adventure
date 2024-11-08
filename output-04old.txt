@@ -4,3 +4,29 @@ luuRRUdllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUdrruLd
 A*
 Steps: 56, Cost: 267, Node: 3219, Time (ms): 171.10, Memory (MB): 2.27
 luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+A*
+No solution found.
+UCS
+Steps: 56, Cost: 267, Node: 8021, Time (ms): 226.15, Memory (MB): 4.19
+luuRRUUdlldddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+A*
+Steps: 56, Cost: 267, Node: 3219, Time (ms): 132.13, Memory (MB): 1.74
+luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+BFS
+Steps: 56, Cost: 267, Node: 5743, Time (ms): 123.17, Memory (MB): 3.28
+luuRRUUldldddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+DFS
+Steps: 302, Cost: 1547, Node: 3898, Time (ms): 79.24, Memory (MB): 1.93
+luuRRUdllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRurUdrdLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUUddrruLdllluurrUrDlllddrrrUdlUdlluururrDLddrruLdllluuRRllddrrUdlluururrDLddrruLdlUUrddllluuRlddrrruuuLrdddllluurRdrUddllluurUU
+A*
+Steps: 56, Cost: 267, Node: 3219, Time (ms): 132.58, Memory (MB): 1.74
+luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+UCS
+Steps: 56, Cost: 267, Node: 8021, Time (ms): 222.02, Memory (MB): 4.19
+luuRRUUdlldddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+BFS
+Steps: 56, Cost: 267, Node: 5743, Time (ms): 124.98, Memory (MB): 3.28
+luuRRUUldldddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+DFS
+Steps: 302, Cost: 1547, Node: 3898, Time (ms): 84.48, Memory (MB): 1.93
+luuRRUdllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRurUdrdLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUUddrruLdllluurrUrDlllddrrrUdlUdlluururrDLddrruLdllluuRRllddrrUdlluururrDLddrruLdlUUrddllluuRlddrrruuuLrdddllluurRdrUddllluurUU

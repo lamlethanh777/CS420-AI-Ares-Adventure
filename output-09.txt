@@ -16,3 +16,6 @@ urruruuruulldlDururrddlddldlluRlddllluuruuuRRdrDDuuRuurrddLddLdLdlllluuruuurrRdd
 A*
 Steps: 199, Cost: 777, Node: 1060383, Time (ms): 66580.69, Memory (MB): 588.59
 urruruuruulldlDururrddlddldlluRlddllluuruuuRRdrDDuuRuurrddLddLdLdlllluuruuurrRddDrruuLrddlluUlulldddlddrrrrUUlDrdLuurrruullDDDuuurrruullDurrddlddlluuluRdddrruuLrruullDlDDuururrddlLrddldlluRuUlulldddR
+A*
+Steps: 199, Cost: 777, Node: 1060383, Time (ms): 72076.49, Memory (MB): 588.59
+urruruuruulldlDururrddlddldlluRlddllluuruuuRRdrDDuuRuurrddLddLdLdlllluuruuurrRddDrruuLrddlluUlulldddlddrrrrUUlDrdLuurrruullDDDuuurrruullDurrddlddlluuluRdddrruuLrruullDlDDuururrddlLrddldlluRuUlulldddR

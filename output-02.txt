@@ -61,3 +61,25 @@ lluRurDurrdLLLulDrdRRRRRRR
 DFS
 Steps: 34, Cost: 335, Node: 97, Time (ms): 4.07, Memory (MB): 0.06
 rDlddrrruuLLrrddllUdrruulullDRddlU
+A*
+No solution found.
+DFS
+No solution found.
+DFS
+No solution found.
+A*
+No solution found.
+UCS
+No solution found.
+UCS
+No solution found.
+A*
+Steps: 34, Cost: 335, Node: 89, Time (ms): 3.85, Memory (MB): 0.06
+rDlddrrruuLLrrddllUdrruulullDRddlU
+DFS
+No solution found.
+DFS
+Steps: 34, Cost: 335, Node: 97, Time (ms): 2.10, Memory (MB): 0.06
+rDlddrrruuLLrrddllUdrruulullDRddlU
+DFS
+No solution found.

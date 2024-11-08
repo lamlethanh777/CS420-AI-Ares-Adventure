@@ -61,6 +61,7 @@ class Environment:
         self.goals = self.find_goals(maze)
         self.initial_rocks_map = self.find_rocks(maze, rock_weights)
         self.unreachable_positions = self.find_unreachable_positions(maze)
+        # print(self.unreachable_positions)
         self.maze = self.get_map_wall(maze)
 
     def find_player(self, maze: list[str]):
@@ -157,7 +158,7 @@ class State:
         self.rocks_map = rocks_map
 
     def __str__(self):
-        return str(self.maze)
+        return str(self.player_pos)
 
     def __hash__(self):
         player_pos = self.player_pos
@@ -224,6 +225,56 @@ class Problem:
     def is_simple_dead_lock(self, x: int, y: int):
         return (x, y) in self.environment.unreachable_positions
 
+    def is_axis_blocked(
+        self,
+        state: State,
+        maze: list[str],
+        visited: set,
+        x: int,
+        y: int,
+        is_horizontal: bool,
+    ):
+        if maze[x][y] == ".":
+            return False
+        if (x, y) in visited:
+            return True
+        
+        visited.add((x, y))
+
+        if is_horizontal:
+            pos1 = (x, y - 1)
+            pos2 = (x, y + 1)
+            cell1 = maze[x][y - 1]
+            cell2 = maze[x][y + 1]
+        else:
+            pos1 = (x - 1, y)
+            pos2 = (x + 1, y)
+            cell1 = maze[x - 1][y]
+            cell2 = maze[x + 1][y]
+
+        if (
+            cell1 == "#"
+            or cell2 == "#"
+            or (self.is_simple_dead_lock(*pos1) and self.is_simple_dead_lock(*pos2))
+        ):
+            return True
+        elif pos1 in state.rocks_map:
+            return self.is_axis_blocked(state, maze, visited, *pos1, not is_horizontal)
+        elif pos2 in state.rocks_map:
+            return self.is_axis_blocked(state, maze, visited, *pos2, not is_horizontal)
+        return False
+
+    def is_freeze_dead_lock(self, state: State, x: int, y: int, dx: int, dy: int):
+        maze = self.environment.maze
+        if maze[x][y] == ".":
+            return False
+
+        visited = set()
+
+        return self.is_axis_blocked(
+            state, maze, visited, x, y, True
+        ) and self.is_axis_blocked(state, maze, visited, x, y, False)
+
     def result(self, state: State, movement: tuple[int, int]):
         """
         Apply the movement to the given state and return the resulting state.
@@ -247,6 +298,7 @@ class Problem:
                 (next_x, next_y) not in new_state.rocks_map
                 and self.environment.maze[next_x][next_y] != "#"
                 and not self.is_simple_dead_lock(next_x, next_y)
+                # and not self.is_freeze_dead_lock(new_state, new_x, new_y, dx, dy)
             ):
                 new_state.player_pos = (new_x, new_y)
                 new_state.rocks_map[(next_x, next_y)] = weight
@@ -436,8 +488,6 @@ class UCSolver(Solver):
 
     def solve(self):
         node = Node(self.problem.initial)
-        if self.problem.is_goal(node.state):
-            return self.trace_path(node)
 
         frontier = []
         reached = {}  # cost of reaching the node
@@ -486,8 +536,6 @@ class AStarSolver(Solver):
     @profile
     def solve(self):
         node = Node(self.problem.initial)
-        if self.problem.is_goal(node.state):
-            return self.trace_path(node)
 
         frontier = []
         reached = {}  # combined cost of reaching the node and heuristic cost
