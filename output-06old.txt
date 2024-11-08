@@ -69,3 +69,12 @@ Steps: 96, Cost: 1680, Node: 249287, Time (ms): 16338.28, Memory (MB): 184.93
 lluurDuurrrdddllLulllddrrdrUlUUruurrdrddllLuuurrdDuullddlDrrRurrrddlldlUrUUluulllDrddrRurDuluurD
 A*
 No solution found.
+A*
+Steps: 100, Cost: 1684, Node: 163614, Time (ms): 11926.45, Memory (MB): 118.18
+lluurDuurrdrddllLulllddrrdrUlUUruurrdrddllLrrrddlUruuulullddlDrrRdrUUdllluuurrdDuulllDrddrRurDuluurD
+A*
+Steps: 100, Cost: 1684, Node: 163614, Time (ms): 9458.66, Memory (MB): 90.33
+lluurDuurrdrddllLulllddrrdrUlUUruurrdrddllLrrrddlUruuulullddlDrrRdrUUdllluuurrdDuulllDrddrRurDuluurD
+A*
+Steps: 100, Cost: 1684, Node: 163614, Time (ms): 13549.32, Memory (MB): 90.23
+lluurDuurrdrddllLulllddrrdrUlUUruurrdrddllLrrrddlUruuulullddlDrrRdrUUdllluuurrdDuulllDrddrRurDuluurD

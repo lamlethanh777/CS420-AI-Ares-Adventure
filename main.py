@@ -52,39 +52,46 @@ class IOHandler:
 
 
 # region Problem Formulation
-class State:
-    """State class for storing the state of the Sokoban puzzle game."""
+# region Environment
+class Environment:
+    """Environment class for Sokoban puzzle game, it stores the maze layout and goals position."""
 
-    def __init__(
-        self,
-        maze,
-        rock_weights=None,
-        player_pos=None,
-        rocks_map=None,
-        goals=None,
-        unreachable_positions=None,
-    ):
-        self.maze = maze
-        self.player_pos = self.find_player() if player_pos is None else player_pos
-        self.rocks_map = (
-            self.find_rocks(rock_weights) if rocks_map is None else rocks_map
-        )
-        self.goals = self.find_goals() if goals is None else goals
-        self.maze = self.get_map_wall()
-        self.unreachable_positions = (
-            self.find_unreachable_positions()
-            if unreachable_positions is None
-            else unreachable_positions
-        )
+    def __init__(self, maze: list[str], rock_weights: list[int]):
+        self.initial_player_pos = self.find_player(maze)
+        self.goals = self.find_goals(maze)
+        self.initial_rocks_map = self.find_rocks(maze, rock_weights)
+        self.unreachable_positions = self.find_unreachable_positions(maze)
+        self.maze = self.get_map_wall(maze)
 
-    def __str__(self):
-        return str(self.maze)
+    def find_player(self, maze: list[str]):
+        for row_idx, row in enumerate(maze):
+            for col_idx, _ in enumerate(row):
+                if maze[row_idx][col_idx] == "@" or maze[row_idx][col_idx] == "+":
+                    return row_idx, col_idx
 
-    def find_unreachable_positions(self):
+    def find_goals(self, maze: list[str]):
+        goals = []
+        for row_idx, row in enumerate(maze):
+            for col_idx, _ in enumerate(row):
+                if maze[row_idx][col_idx] == "." or maze[row_idx][col_idx] == "*":
+                    goals.append((row_idx, col_idx))
+        return goals
+
+    def find_rocks(self, maze: list[str], rock_weights: list[int]):
+        rocks_map = {}
+        count = 0
+        for row_idx, row in enumerate(maze):
+            for col_idx, _ in enumerate(row):
+                if maze[row_idx][col_idx] == "$" or maze[row_idx][col_idx] == "*":
+                    rocks_map[(row_idx, col_idx)] = rock_weights[count]
+                    count += 1
+
+        return rocks_map
+
+    def find_unreachable_positions(self, maze: list[str]):
         """
         For every goal square, perform reverse BFS by pulling the box from the goal to every possible square.
         """
-        maze = self.maze
         height = len(maze)
         width = len(maze[0])
 
@@ -128,45 +135,29 @@ class State:
                             queue.append((prev_box_x, prev_box_y))
         return all_positions - reachable_positions
 
-    def find_player(self):
-        for row_idx, row in enumerate(self.maze):
-            for col_idx, _ in enumerate(row):
-                if (
-                    self.maze[row_idx][col_idx] == "@"
-                    or self.maze[row_idx][col_idx] == "+"
-                ):
-                    return row_idx, col_idx
-
-    def find_rocks(self, rock_weights):
-        rocks_map = {}
-        count = 0
-        for row_idx, row in enumerate(self.maze):
-            for col_idx, _ in enumerate(row):
-                if (
-                    self.maze[row_idx][col_idx] == "$"
-                    or self.maze[row_idx][col_idx] == "*"
-                ):
-                    rocks_map[(row_idx, col_idx)] = rock_weights[count]
-                    count += 1
-
-        return rocks_map
-
-    def find_goals(self):
-        goals = []
-        for row_idx, row in enumerate(self.maze):
-            for col_idx, _ in enumerate(row):
-                if (
-                    self.maze[row_idx][col_idx] == "."
-                    or self.maze[row_idx][col_idx] == "*"
-                ):
-                    goals.append((row_idx, col_idx))
-        return goals
-
-    def get_map_wall(self):
+    def get_map_wall(self, maze: list[str]):
         return [
             line.replace("*", ".").replace("$", " ").replace("+", ".").replace("@", " ")
-            for line in self.maze
+            for line in maze
         ]
+
+    def get_initial_state(self):
+        return State(self.initial_player_pos, self.initial_rocks_map)
+
+
+# endregion
+
+
+# region State
+class State:
+    """State class for storing the state of the Sokoban puzzle game."""
+
+    def __init__(self, player_pos: tuple[int, int], rocks_map: dict):
+        self.player_pos = player_pos
+        self.rocks_map = rocks_map
+
+    def __str__(self):
+        return str(self.maze)
 
     def __hash__(self):
         player_pos = self.player_pos
@@ -182,20 +173,17 @@ class State:
         return False
 
     def copy(self):
-        return State(
-            self.maze,
-            None,
-            self.player_pos,
-            self.rocks_map.copy(),
-            self.goals,
-            self.unreachable_positions,
-        )
+        return State(self.player_pos, self.rocks_map.copy())
 
 
+# endregion
+
+
+# region Node
 class Node:
     """Node class for search algorithms."""
 
-    def __init__(self, state, parent, action, path_cost):
+    def __init__(self, state, parent=None, action=None, path_cost=0):
         self.state = state
         self.parent = parent
         self.action = action
@@ -211,35 +199,32 @@ class Node:
         return self.state == other.state
 
 
-t = 0
-times = 0
+# endregion
 
 
+# region Problem
 class Problem:
     """Problem class for Sokoban puzzle game defines the initial state, goal and valid actions."""
 
     actions = (("u", (-1, 0)), ("l", (0, -1)), ("d", (1, 0)), ("r", (0, 1)))
 
-    def __init__(self, initial: State):
-        self.initial = initial
+    def __init__(self, environment: Environment):
+        self.environment = environment
+        self.initial = environment.get_initial_state()
 
     def is_goal(self, state: State):
-        # TODO: check if all rocks are on goals
         for rock_pos in state.rocks_map:
-            if state.maze[rock_pos[0]][rock_pos[1]] != ".":
+            if self.environment.maze[rock_pos[0]][rock_pos[1]] != ".":
                 return False
         # for goal in state.goals:
         #     if goal not in state.rocks_map:
         #         return False
         return True
 
-    def is_initial(self, state):
-        return state.maze == self.initial.maze
+    def is_simple_dead_lock(self, x: int, y: int):
+        return (x, y) in self.environment.unreachable_positions
 
-    def is_dead_lock(self, state, x, y, dx, dy):
-        return (x, y) in state.unreachable_positions
-
-    def result(self, state: State, movement: tuple):
+    def result(self, state: State, movement: tuple[int, int]):
         """
         Apply the movement to the given state and return the resulting state.
 
@@ -260,19 +245,21 @@ class Problem:
             weight = new_state.rocks_map[(new_x, new_y)]
             if (
                 (next_x, next_y) not in new_state.rocks_map
-                and new_state.maze[next_x][next_y] != "#"
-                and not self.is_dead_lock(new_state, next_x, next_y, dx, dy)
+                and self.environment.maze[next_x][next_y] != "#"
+                and not self.is_simple_dead_lock(next_x, next_y)
             ):
                 new_state.player_pos = (new_x, new_y)
                 new_state.rocks_map[(next_x, next_y)] = weight
                 del new_state.rocks_map[(new_x, new_y)]
                 return new_state, True, weight + 1
-        elif new_state.maze[new_x][new_y] != "#":
+        elif self.environment.maze[new_x][new_y] != "#":
             new_state.player_pos = (new_x, new_y)
             return new_state, False, 1
 
         return None, False, 0
 
+
+# endregion
 
 # endregion
 
@@ -325,7 +312,7 @@ class Solver:
         memory_used = (self.memory_end - self.memory_start) / (1024 * 1024)
         return f"{self.algorithm_name}\nSteps: {self.steps}, Cost: {self.total_cost}, Node: {self.nodes_generated}, Time (ms): {time_taken:.2f}, Memory (MB): {memory_used:.2f}\n{self.result}"
 
-    def trace_path(self, node):
+    def trace_path(self, node: Node):
         self.steps = 0
         self.total_cost = node.path_cost
 
@@ -353,7 +340,7 @@ class DFSolver(Solver):
         super().__init__("DFS")
 
     def solve(self):
-        node = Node(self.problem.initial, None, None, 0)
+        node = Node(self.problem.initial)
         if self.problem.is_goal(node.state):
             return self.trace_path(node)
 
@@ -399,7 +386,7 @@ class BFSolver(Solver):
         super().__init__("BFS")
 
     def solve(self):
-        node = Node(self.problem.initial, None, None, 0)
+        node = Node(self.problem.initial)
         if self.problem.is_goal(node.state):
             return self.trace_path(node)
 
@@ -448,7 +435,10 @@ class UCSolver(Solver):
         super().__init__("UCS")
 
     def solve(self):
-        node = Node(self.problem.initial, None, None, 0)
+        node = Node(self.problem.initial)
+        if self.problem.is_goal(node.state):
+            return self.trace_path(node)
+
         frontier = []
         reached = {}  # cost of reaching the node
         self.nodes_generated = 1
@@ -495,7 +485,10 @@ class AStarSolver(Solver):
 
     @profile
     def solve(self):
-        node = Node(self.problem.initial, None, None, 0)
+        node = Node(self.problem.initial)
+        if self.problem.is_goal(node.state):
+            return self.trace_path(node)
+
         frontier = []
         reached = {}  # combined cost of reaching the node and heuristic cost
         heuristic = {}
@@ -544,7 +537,7 @@ class AStarSolver(Solver):
 
         return None
 
-    def heuristic_cost(self, state):
+    def heuristic_cost(self, state: State):
         """
         Calculate the heuristic cost for the given state.
 
@@ -555,7 +548,8 @@ class AStarSolver(Solver):
             int: The heuristic cost based on the distance of rocks to their closest goals, weighted by the rock weights.
         """
         heuristic = 0
-        goals = state.goals
+        goals = self.problem.environment.goals
+        maze = self.problem.environment.maze
         rocks = sorted(state.rocks_map.items(), key=lambda x: x[1], reverse=True)
         used_goals = set()
 
@@ -563,7 +557,7 @@ class AStarSolver(Solver):
             min_distance = float("inf")
             closest_goal = None
 
-            if state.maze[rock_pos[0]][rock_pos[1]] == ".":
+            if maze[rock_pos[0]][rock_pos[1]] == ".":
                 used_goals.add(rock_pos)
                 continue
 
@@ -598,7 +592,7 @@ DEFAULT_FPS = 4
 class SolverThread(QThread):
     finished = pyqtSignal(object)
 
-    def __init__(self, solver, problem):
+    def __init__(self, solver: Solver, problem: Problem):
         super().__init__()
         self.solver = solver
         self.problem = problem
@@ -678,10 +672,10 @@ class SokobanVisualizer(QWidget):
     # endregion
 
     # region Visualizer Map Management
-    def change_map(self, maze, rock_weights):
+    def change_map(self, maze: list[str], rock_weights: list[int]):
         """Update the current map with new maze and rock weights."""
         self.maze = maze
-        self.base_maze = maze
+        self.base_maze = maze.copy()
         self.rock_weights = rock_weights
         self.reset_map()
         self.prepare_ui()
@@ -772,7 +766,7 @@ class SokobanVisualizer(QWidget):
         self.paint_cell(x, y, "+" if self.maze[y][x] == "." else "@", painter)
         painter.end()
 
-    def paint_cell(self, x, y, cell, painter):
+    def paint_cell(self, x: int, y: int, cell: str, painter: QPainter):
         """Paint a single cell in the maze."""
         tile_x = x * self.tile_size
         tile_y = y * self.tile_size
@@ -806,7 +800,7 @@ class SokobanVisualizer(QWidget):
         if cell == "$" or cell == "*":
             self.paint_rock_text(x, y, str(self.rocks_map[(y, x)]), painter)
 
-    def paint_rock_text(self, x, y, text, painter):
+    def paint_rock_text(self, x: int, y: int, text: str, painter: QPainter):
         """Paint the weight text on rocks."""
         painter.setPen(Qt.white)
         font = painter.font()
@@ -826,7 +820,7 @@ class SokobanVisualizer(QWidget):
     # endregion
 
     # region Visualizer Game Logic
-    def move_player(self, action):
+    def move_player(self, action: str):
         """Handle player movement and rock pushing."""
         dx, dy = self.movements[action]
         new_x, new_y = self.player_pos[0] + dx, self.player_pos[1] + dy
@@ -843,7 +837,7 @@ class SokobanVisualizer(QWidget):
 
         self.total_steps += 1
 
-    def update_player_direction(self, direction):
+    def update_player_direction(self, direction: str):
         """Update the player's facing direction."""
         self.player_direction = direction
 
@@ -867,7 +861,7 @@ class SokobanVisualizer(QWidget):
     # endregion
 
     # region Visualizer Control
-    def set_moves(self, moves):
+    def set_moves(self, moves: str):
         """Set the sequence of moves to visualize."""
         self.moves = moves
         self.move_index = 0
@@ -899,7 +893,7 @@ class SokobanVisualizer(QWidget):
         if self.timer:
             self.timer.stop()
 
-    def change_speed(self, fps):
+    def change_speed(self, fps: int):
         """Change visualization animation speed."""
         self.speed = 1000 // fps
         if self.timer and self.timer.isActive():
@@ -1063,7 +1057,6 @@ class App(QWidget):
         algorithm = self.algorithm_dropdown.currentText()
 
         try:
-            problem = Problem(State(self.maze, self.rock_weights))
             solver = self.solvers[algorithm]
 
             # Show progress dialog with indeterminate progress bar
@@ -1077,7 +1070,7 @@ class App(QWidget):
             self.progress_dialog.canceled.connect(self.stop_solver)
 
             # Run the solver in a separate thread
-            problem = Problem(State(self.maze, self.rock_weights))
+            problem = Problem(Environment(self.maze, self.rock_weights))
             self.solver_thread = SolverThread(solver, problem)
             self.solver_thread.finished.connect(self.on_solver_finished)
             self.solver_thread.start()
