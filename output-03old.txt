@@ -1,0 +1,13 @@
+A*
+Steps: 51, Cost: 133, Node: 6126, Time (ms): 328.89, Memory (MB): 5.43
+rrrdrrrrDDrdLLuuuuulDrdddddllluLdlUruLdlUdDDldRRRRR
+A*
+Steps: 51, Cost: 133, Node: 6126, Time (ms): 355.41, Memory (MB): 5.43
+rrrdrrrrDDrdLLuuuuulDrdddddllluLdlUruLdlUdDDldRRRRR
+DFS
+No solution found.
+DFS
+No solution found.
+A*
+Steps: 51, Cost: 133, Node: 6126, Time (ms): 280.88, Memory (MB): 5.33
+rrrdrrrrDDrdLLuuuuulDrdddddllluLdlUruLdlUdDDldRRRRR

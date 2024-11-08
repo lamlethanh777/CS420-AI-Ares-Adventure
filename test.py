@@ -293,7 +293,6 @@ class Solver:
         self.memory_start = None
         self.memory_end = None
         self.result = None
-        self.should_stop = False
 
     def start_timer(self):
         self.start_time = time.time()
@@ -340,9 +339,6 @@ class Solver:
     def get_result(self):
         return self.result
 
-    def stop(self):
-        self.should_stop = True
-
 
 # endregion
 
@@ -363,7 +359,7 @@ class DFSolver(Solver):
         reached.add(node.state)
         self.nodes_generated = 1
 
-        while frontier and not self.should_stop:
+        while frontier:
             node = frontier.pop()
 
             for action, movement in self.problem.actions:
@@ -410,7 +406,7 @@ class BFSolver(Solver):
         frontier.append(node)
         reached.add(node.state)
 
-        while frontier and not self.should_stop:
+        while frontier:
             node = frontier.pop(0)
 
             for action, movement in self.problem.actions:
@@ -455,7 +451,7 @@ class UCSolver(Solver):
 
         heapq.heappush(frontier, (0, node))
 
-        while frontier and not self.should_stop:
+        while frontier:
             _, node = heapq.heappop(frontier)
             state = node.state
 
@@ -505,7 +501,7 @@ class AStarSolver(Solver):
         heuristic[node.state] = self.heuristic_cost(node.state)
         reached[node.state] = heuristic[node.state]
 
-        while frontier and not self.should_stop:
+        while frontier:
             _, node = heapq.heappop(frontier)
             state = node.state
 
@@ -606,9 +602,6 @@ class SolverThread(QThread):
     def run(self):
         self.solver.solve_and_measure(self.problem)
         self.finished.emit(self.solver)
-
-    def stop_solver(self):
-        self.solver.stop()
 
 
 # endregion
@@ -937,7 +930,6 @@ class App(QWidget):
         }
         self.results = {}
         self.visualizer = None
-        self.is_solver_stopped = False
 
     # endregion
 
@@ -1070,11 +1062,10 @@ class App(QWidget):
             self.progress_dialog = QProgressDialog(
                 "Running solver, please wait...", None, 0, 0, self
             )
-            self.progress_dialog.setWindowTitle("Solving")
+            self.progress_dialog.setWindowTitle("Running Solver")
+            self.progress_dialog.setWindowModality(Qt.WindowModal)
+            self.progress_dialog.setCancelButton(None)
             self.progress_dialog.show()
-
-            # Connect the 'canceled' and 'rejected' signals
-            self.progress_dialog.canceled.connect(self.stop_solver)
 
             # Run the solver in a separate thread
             problem = Problem(State(self.maze, self.rock_weights))
@@ -1084,19 +1075,8 @@ class App(QWidget):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Solver failed: {str(e)}")
 
-    def stop_solver(self):
-        """Called when the solver is stopped manually"""
-        self.solver_thread.stop_solver()
-        self.is_solver_stopped = True
-        QMessageBox.information(self, "Information", "Solver stopped.")
-
     def on_solver_finished(self, solver):
         """Handle solver completion"""
-        if self.is_solver_stopped:
-            self.is_solver_stopped = False
-            return
-
-        self.progress_dialog.canceled.disconnect()
         self.progress_dialog.close()
         self.process_solver_results(solver)
         self.prepare_visualization(solver)

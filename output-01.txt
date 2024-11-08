@@ -27,3 +27,18 @@ RlLL
 DFS
 Steps: 4, Cost: 105, Node: 5, Time (ms): 0.23, Memory (MB): 0.00
 RlLL
+DFS
+Steps: 4, Cost: 105, Node: 5, Time (ms): 0.25, Memory (MB): 0.01
+RlLL
+DFS
+Steps: 4, Cost: 105, Node: 5, Time (ms): 0.18, Memory (MB): 0.00
+RlLL
+DFS
+Steps: 4, Cost: 105, Node: 5, Time (ms): 0.22, Memory (MB): 0.01
+RlLL
+DFS
+Steps: 4, Cost: 105, Node: 5, Time (ms): 0.28, Memory (MB): 0.01
+RlLL
+DFS
+Steps: 4, Cost: 105, Node: 5, Time (ms): 0.16, Memory (MB): 0.00
+RlLL

@@ -58,3 +58,6 @@ lluRurrDrdLLLuRRRRRRRurD
 A*
 Steps: 26, Cost: 431, Node: 6195, Time (ms): 361.80, Memory (MB): 5.17
 lluRurDurrdLLLulDrdRRRRRRR
+DFS
+Steps: 34, Cost: 335, Node: 97, Time (ms): 4.07, Memory (MB): 0.06
+rDlddrrruuLLrrddllUdrruulullDRddlU

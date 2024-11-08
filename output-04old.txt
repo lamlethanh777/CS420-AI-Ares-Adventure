@@ -1,3 +1,6 @@
 DFS
 Steps: 302, Cost: 1547, Node: 296315, Time (ms): 27423.55, Memory (MB): 187.95
 luuRRUdllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRurUdrdLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUUddrruLdllluurrUrDlllddrrrUdlUdlluururrDLddrruLdllluuRRllddrrUdlluururrDLddrruLdlUUrddllluuRlddrrruuuLrdddllluurRdrUddllluurUU
+A*
+Steps: 56, Cost: 267, Node: 3219, Time (ms): 171.10, Memory (MB): 2.27
+luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
