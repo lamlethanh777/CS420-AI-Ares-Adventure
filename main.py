@@ -378,6 +378,12 @@ class Solver:
 
     def get_result(self):
         return self.result
+    
+    def get_time_taken(self):  
+        return (self.end_time - self.start_time) * 1000
+    
+    def get_memory_used(self):
+        return (self.memory_end - self.memory_start) / (1024 * 1024)    
 
     def stop(self):
         self.should_stop = True
