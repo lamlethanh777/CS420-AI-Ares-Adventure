@@ -30,3 +30,9 @@ luuRRUUldldddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
 DFS
 Steps: 302, Cost: 1547, Node: 3898, Time (ms): 84.48, Memory (MB): 1.93
 luuRRUdllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRurUdrdLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUdrruLdllluururrDLulldRRllddrrUUddrruLdllluurrUrDlllddrrrUdlUdlluururrDLddrruLdllluuRRllddrrUdlluururrDLddrruLdlUUrddllluuRlddrrruuuLrdddllluurRdrUddllluurUU
+A*
+Steps: 56, Cost: 267, Node: 3505, Time (ms): 170.65, Memory (MB): 2.01
+luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU
+A*
+Steps: 56, Cost: 267, Node: 3219, Time (ms): 152.30, Memory (MB): 1.75
+luuRRUUddllddrrUUddrruLdllluurrUrDlllddrrUUruLdddrUUllUU

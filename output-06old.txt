@@ -107,3 +107,27 @@ lluurDuurrdrddllLulllddrrdrUlUUruurrdrddllLrrrddlUruuulullddlDrrRdrUUdllluuurrdD
 A*
 Steps: 100, Cost: 1684, Node: 163614, Time (ms): 9479.95, Memory (MB): 90.33
 lluurDuurrdrddllLulllddrrdrUlUUruurrdrddllLrrrddlUruuulullddlDrrRdrUUdllluuurrdDuulllDrddrRurDuluurD
+A*
+Steps: 96, Cost: 1680, Node: 131965, Time (ms): 25569.76, Memory (MB): 83.24
+lluurDuurrrdddllLulllddrrdrUlUUruurrrdddllLuuurrdDuullddlDrrRurrrddlldlUrUUluulllDrddrRurDuluurD
+A*
+Steps: 96, Cost: 1680, Node: 394408, Time (ms): 64566.27, Memory (MB): 158.66
+rruulDuulldlddrrRurrrddlldlUrUUluullldddrrRllluurDuurrddrDllLulllddrrdrUlUUruurrrDlddlLulDuruulD
+A*
+Steps: 96, Cost: 1680, Node: 131965, Time (ms): 24525.85, Memory (MB): 83.24
+lluurDuurrrdddllLulllddrrdrUlUUruurrrdddllLuuurrdDuullddlDrrRurrrddlldlUrUUluulllDrddrRurDuluurD
+A*
+Steps: 96, Cost: 1680, Node: 131685, Time (ms): 25081.77, Memory (MB): 83.11
+lluurDuurrrdddllLulllddrrdrUlUUruurrdrddllLuuurrdDuullddlDrrRurrrddlldlUrUUluulllDrddrRurDluuurD
+A*
+Steps: 96, Cost: 1680, Node: 196698, Time (ms): 11973.36, Memory (MB): 127.42
+lluurDuurrrdddllLulllddrrdrUlUUruurrdrddllLuuurrdDuullddlDrrRurrrddlldlUrUUluulllDrddrRurDuluurD
+A*
+Steps: 96, Cost: 1680, Node: 195997, Time (ms): 12451.54, Memory (MB): 127.91
+rruulDuulldlddrrRurrrddlldlUrUUluulldlddrrRllluurDuurrddrDllLulllddrrdrUlUUruurrrDlddlLulDuruulD
+A*
+Steps: 96, Cost: 1680, Node: 195997, Time (ms): 12910.92, Memory (MB): 128.32
+rruulDuulldlddrrRurrrddlldlUrUUluulldlddrrRllluurDuurrddrDllLulllddrrdrUlUUruurrrDlddlLulDuruulD
+A*
+Steps: 100, Cost: 1684, Node: 163266, Time (ms): 10435.68, Memory (MB): 91.19
+lluurDuurrdrddllLulllddrrdrUlUUruurrdrddllLrrrddlUruuulullddlDrrRdrUUdllluuurrdDuulllDrddrRurDuluurD

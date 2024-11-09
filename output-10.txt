@@ -61,3 +61,24 @@ rdRRurDlllulldRRlldlluRRurrddLDuruulldldRuurrdLLrrRRddldlLuUrurrurrddLruulldlldl
 BFS
 Steps: 99, Cost: 174, Node: 184698, Time (ms): 5340.74, Memory (MB): 96.19
 rdRRurDlllulldRRlldlluRRurrddLDuLulldRRuurrdLLrrRRddldlLuUrurrurrddLruulldllulldRRlddddlluRdrUrrurU
+A*
+Steps: 101, Cost: 168, Node: 99279, Time (ms): 25343.24, Memory (MB): 57.60
+rdRRurDlllulldRRlldlluRRurrddLDuruulldldRuurrdLLrrRRddldlLuUrurrurrddLruulldlldlluRRdldddlluRdrUrrurU
+A*
+Steps: 101, Cost: 168, Node: 78378, Time (ms): 20527.80, Memory (MB): 42.60
+rdRRurDlllulldRRlldlluRRurrddLDuruulldldRuurrdLLrrRRddldlLuUrurrurrddLruulldlldlluRRdldddlluRdrUrrurU
+A*
+Steps: 101, Cost: 168, Node: 102492, Time (ms): 25092.34, Memory (MB): 58.44
+rdRRurDlllulldRRlldlluRRurrddLDuruulldldRuurrdLLrrRRddldlLuUrurrurrddLruulldlldlluRRlddddlluRdrUrrurU
+A*
+Steps: 101, Cost: 168, Node: 105281, Time (ms): 5962.15, Memory (MB): 60.29
+rdRRurDlllulldRRlldlluRRurrddLDuruulldldRuurrdLLrrRRddldlLuUrurrurrddLruulldllulldRRdldddlluRdrUrrurU
+A*
+Steps: 101, Cost: 168, Node: 103451, Time (ms): 6314.92, Memory (MB): 59.73
+rdRRurDlllulldRRlldlluRRurrddLDuruulldldRuurrdLLrrRRddldlLuUrurrurrddLruulldlldlluRRdldddlluRdrUrrurU
+A*
+Steps: 101, Cost: 168, Node: 103451, Time (ms): 6091.35, Memory (MB): 59.73
+rdRRurDlllulldRRlldlluRRurrddLDuruulldldRuurrdLLrrRRddldlLuUrurrurrddLruulldlldlluRRdldddlluRdrUrrurU
+A*
+Steps: 101, Cost: 168, Node: 103451, Time (ms): 6742.57, Memory (MB): 59.72
+rdRRurDlllulldRRlldlluRRurrddLDuruulldldRuurrdLLrrRRddldlLuUrurrurrddLruulldlldlluRRdldddlluRdrUrrurU

@@ -20,6 +20,7 @@ import heapq
 import time
 import tracemalloc
 from line_profiler import profile
+from munkres import Munkres
 
 
 # region IO Handler
@@ -61,7 +62,6 @@ class Environment:
         self.goals = self.find_goals(maze)
         self.initial_rocks_map = self.find_rocks(maze, rock_weights)
         self.unreachable_positions = self.find_unreachable_positions(maze)
-        # print(self.unreachable_positions)
         self.maze = self.get_map_wall(maze)
 
     def find_player(self, maze: list[str]):
@@ -238,7 +238,7 @@ class Problem:
             return False
         if (x, y) in visited:
             return True
-        
+
         visited.add((x, y))
 
         if is_horizontal:
@@ -595,6 +595,48 @@ class AStarSolver(Solver):
         Returns:
             int: The heuristic cost based on the distance of rocks to their closest goals, weighted by the rock weights.
         """
+        # # Get rock positions and their weights
+        # rock_positions = list(state.rocks_map.keys())
+        # rock_weights = [state.rocks_map[pos] for pos in rock_positions]
+
+        # # Get goal positions
+        # goal_positions = self.problem.environment.goals
+
+        # # Create cost matrix
+        # cost_matrix = []
+        # for i, rock_pos in enumerate(rock_positions):
+        #     row = []
+        #     for goal_pos in goal_positions:
+        #         # Calculate Manhattan distance multiplied by rock weight
+        #         distance = abs(rock_pos[0] - goal_pos[0]) + abs(
+        #             rock_pos[1] - goal_pos[1]
+        #         )
+        #         cost = distance * (rock_weights[i] + 1)
+        #         row.append(cost)
+        #     cost_matrix.append(row)
+
+        # # Apply Munkres algorithm to find minimum total cost matching
+        # m = Munkres()
+        # indexes = m.compute(cost_matrix)
+
+        # # Sum the costs of the optimal assignments
+        # return sum(cost_matrix[row][column] for row, column in indexes)
+        # Calculate the sum of Manhattan distances between rocks and goals and the distance from the player to the closest rock
+        # return sum(
+        #     (
+        #         min(
+        #             abs(rock_pos[0] - goal_pos[0]) + abs(rock_pos[1] - goal_pos[1])
+        #             for goal_pos in self.problem.environment.goals
+        #         )
+        #         + 1
+        #     )
+        #     * (weight + 1)
+        #     for rock_pos, weight in state.rocks_map.items()
+        # ) + min(
+        #     abs(rock_pos[0] - state.player_pos[0])
+        #     + abs(rock_pos[1] - state.player_pos[1])
+        #     for rock_pos in state.rocks_map
+        # )
         heuristic = 0
         goals = self.problem.environment.goals
         maze = self.problem.environment.maze
@@ -619,12 +661,12 @@ class AStarSolver(Solver):
             if closest_goal:
                 used_goals.add(closest_goal)
                 heuristic += min_distance * (rock_weight + 1)
-
-            heuristic += (
-                abs(state.player_pos[0] - rock_pos[0])
-                + abs(state.player_pos[1] - rock_pos[1])
-                - 1
-            )
+                
+        heuristic += min(
+            abs(rock_pos[0] - state.player_pos[0])
+            + abs(rock_pos[1] - state.player_pos[1])
+            for rock_pos in state.rocks_map
+        )
 
         return heuristic  # *1.2-1.6
 

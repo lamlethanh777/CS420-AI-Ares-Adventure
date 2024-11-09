@@ -83,3 +83,6 @@ Steps: 34, Cost: 335, Node: 97, Time (ms): 2.10, Memory (MB): 0.06
 rDlddrrruuLLrrddllUdrruulullDRddlU
 DFS
 No solution found.
+DFS
+Steps: 34, Cost: 335, Node: 97, Time (ms): 2.65, Memory (MB): 0.06
+rDlddrrruuLLrrddllUdrruulullDRddlU

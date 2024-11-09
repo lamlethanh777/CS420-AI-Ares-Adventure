@@ -40,3 +40,9 @@ ldLLddrdrruLdldlluluurrurrDDrdLuuullddRluurrdDllulluRRRlluurrDrDLLddrrUdllullddr
 UCS
 Steps: 250, Cost: 2050, Node: 238666, Time (ms): 8476.58, Memory (MB): 134.34
 ldLLddrdrruLdldlluluurrurrDDrdLuuullddRluurrdDllulluRRRlluurrDrDLLddrrUdllullddrdrrUdlluluurrururrdLddrdLuuuululldDrddRluuluurrdrdLuullddldddrdrrUrUUddldlluluuuruurrddLdLrururrdLululldDrddRdrUUULuullddlDRuuurrddLruulldDrrrruLdllluurrDrdLLrrdddldllulU
+A*
+Steps: 250, Cost: 2050, Node: 122500, Time (ms): 24528.38, Memory (MB): 72.15
+ldLLddrdrruLdldlluluurrurrDDrdLuuullddRluurrdDllulluRRRlluurrDrDLLddrrUdllullddrdrrUdlluluurrururrdLddrdLuuuululldDrddRluuluurrdrdLuullddldddrdrrUrUUddldlluluuuruurrddLdLrururrdLululldDrddRdrUUULuullddlDRuuurrddLruulldDrrrruLdllluurrDrdLLrrddlddllulU
+A*
+Steps: 250, Cost: 2050, Node: 111048, Time (ms): 6832.15, Memory (MB): 71.01
+ldLLddrdrruLdldlluluurrurrDDrdLuuullddRluurrdDllulluRRRlluurrDrDLLddrrUdllullddrdrrUdlluluurrururrdLddrdLuuuululldDrddRluuluurrdrdLuullddldddrdrrUrUUddldlluluuuruurrddLdLrururrdLululldDrddRdrUUULuullddlDRuuurrddLruulldDrrrruLdllluurrDrdLLrrddlddllulU

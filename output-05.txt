@@ -66,3 +66,6 @@ Steps: 168, Cost: 1902, Node: 67002, Time (ms): 2075.18, Memory (MB): 36.42
 llUUddrruuLuuullddRDrrddllUUrUUruLLulldRddlddRluuruuRRdrruLLLulDrrdddrddllUlluurRllddrrUrUUruLLulldRRRdddldlluurRdrUUrruulDrdLuLLulldRRRDDllUdrrurruulDrdLullulldRRRRurD
 DFS
 No solution found.
+A*
+Steps: 168, Cost: 1902, Node: 65488, Time (ms): 3844.96, Memory (MB): 38.18
+llUUddrruuLuuullddRDrrddllUUrUUruLLulldRddlddRluuruuRRdrruLLLulDrrdddrddllUlluurRllddrrUrUUruLLulldRRRdddldlluurRdrUUrruulDrdLuLLulldRRRDDllUdrrurruulDrdLullulldRRRRurD
