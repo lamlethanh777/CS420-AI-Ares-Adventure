@@ -1,0 +1,51 @@
+A*
+Steps: 40, Cost: 1040, Node: 78586, Time (ms): 4544.22, Memory (MB): 56.02
+drddrdrUUUUUUruLLLLddddrddrrRRRRRRRRurDD
+A*
+Steps: 40, Cost: 1040, Node: 78586, Time (ms): 4540.71, Memory (MB): 56.02
+drddrdrUUUUUUruLLLLddddrddrrRRRRRRRRurDD
+DFS
+Steps: 443, Cost: 1949, Node: 1573, Time (ms): 29.89, Memory (MB): 0.96
+rrrddrrrrruullulluRRdrrddddlllllllluRRRRRRdrruLruullulllddddlllluurruulluurrrrrrrrrdLrdddddllllllllluurrrruurrrUrrdddddllllllllluurrrruuruurRdrrdddddllluRdrruululuurruLrddddddlUruLrddllllllllluurrrruurrrrruulLrrddddddllllllllluurrrruurrrdDrrddllllllllluurrrruurrrrruullLrrrddddddllluRdrruulululllddddlllluurruulluurrrrRdrrrrdddddlUruulldlddlllllluurrrruurruruLrrrddddddllllllllluurrrruulllluurrrrRRRdrrdddLLrrddllllllllluurrrruurrrrruuLLLLLLLL
+UCS
+Steps: 23, Cost: 525, Node: 80211, Time (ms): 2807.38, Memory (MB): 42.82
+ddRRRRdrUruuuuLLLLLLdlU
+A*
+Steps: 23, Cost: 525, Node: 1098, Time (ms): 40.07, Memory (MB): 0.66
+ddRRRRdrUruuulUruLLLLLL
+BFS
+Steps: 23, Cost: 525, Node: 41066, Time (ms): 974.14, Memory (MB): 24.85
+ddRRRRdrUruuuuLLLLLLdlU
+A*
+Steps: 23, Cost: 525, Node: 1098, Time (ms): 37.77, Memory (MB): 0.66
+ddRRRRdrUruuulUruLLLLLL
+DFS
+No solution found.
+A*
+No solution found.
+A*
+No solution found.
+A*
+No solution found.
+DFS
+No solution found.
+DFS
+No solution found.
+UCS
+No solution found.
+DFS
+No solution found.
+DFS
+Steps: 78, Cost: 94, Node: 1663, Time (ms): 34.61, Memory (MB): 0.90
+rrrrrrrrruullulululldlluLrrrrrrrrdrdddddllllllllllluurruulluuRRRRRRRRRurDDDDDD
+DFS
+No solution found.
+DFS
+No solution found.
+DFS
+No solution found.
+DFS
+No solution found.
+DFS
+Steps: 122, Cost: 140, Node: 432, Time (ms): 6.14, Memory (MB): 0.25
+rrrrrrrrruullulululldlluLrrrrrrrrdrdddddllllllllllluurruulluuRRRRRRRRRurDDrdddddllllllllllluurruulluurrrrrrrrddrRurDDDDldR

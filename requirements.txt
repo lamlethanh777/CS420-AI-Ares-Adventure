@@ -2,3 +2,5 @@ PyQt5
 line_profiler
 dict_hash
 munkres
+mathplotlib
+numpy

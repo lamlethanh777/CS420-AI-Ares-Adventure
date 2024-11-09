@@ -12,8 +12,9 @@ from PyQt5.QtWidgets import (
     QDesktopWidget,
     QMessageBox,
     QProgressDialog,
+    QSizePolicy,
 )
-from PyQt5.QtCore import Qt, QTimer, QPoint, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QTimer, QPoint, QThread, QSize, pyqtSignal
 from PyQt5.QtGui import QPainter, QPixmap, QIcon
 from math import sqrt
 import heapq
@@ -94,7 +95,7 @@ class Environment:
         For every goal square, perform reverse BFS by pulling the box from the goal to every possible square.
         """
         height = len(maze)
-        width = len(maze[0])
+        width = [len(row) for row in maze]
 
         all_positions = set()
         walls = set()
@@ -123,9 +124,9 @@ class Environment:
 
                     if (
                         0 <= prev_box_x < height
-                        and 0 <= prev_box_y < width
+                        and 0 <= prev_box_y < width[x]
                         and 0 <= player_x < height
-                        and 0 <= player_y < width
+                        and 0 <= player_y < width[x]
                     ):
 
                         if (
@@ -378,12 +379,12 @@ class Solver:
 
     def get_result(self):
         return self.result
-    
-    def get_time_taken(self):  
+
+    def get_time_taken(self):
         return (self.end_time - self.start_time) * 1000
-    
+
     def get_memory_used(self):
-        return (self.memory_end - self.memory_start) / (1024 * 1024)    
+        return (self.memory_end - self.memory_start) / (1024 * 1024)
 
     def stop(self):
         self.should_stop = True
@@ -667,7 +668,7 @@ class AStarSolver(Solver):
             if closest_goal:
                 used_goals.add(closest_goal)
                 heuristic += min_distance * (rock_weight + 1)
-                
+
         heuristic += min(
             abs(rock_pos[0] - state.player_pos[0])
             + abs(rock_pos[1] - state.player_pos[1])
@@ -758,7 +759,9 @@ class SokobanVisualizer(QWidget):
         self.correct_box_image = self.correct_box_image_orig.scaled(
             self.tile_size, self.tile_size
         )
-        self.goal_image = self.goal_image_orig.scaled(self.tile_size, self.tile_size)
+        self.goal_image = self.goal_image_orig.scaled(
+            self.tile_size // 2, self.tile_size // 2
+        )
         self.floor_image = self.floor_image_orig.scaled(self.tile_size, self.tile_size)
         self.player_images = {
             direction: image.scaledToHeight(self.tile_size)
@@ -1013,6 +1016,7 @@ class App(QWidget):
         self.initialize_components()
         self.init_ui()
         self.center()
+        self.is_initialized = True
 
     def initialize_components(self):
         """Initialize core application components"""
@@ -1028,6 +1032,7 @@ class App(QWidget):
         self.results = {}
         self.visualizer = None
         self.is_solver_stopped = False
+        self.is_initialized = False
 
     # endregion
 
@@ -1050,10 +1055,7 @@ class App(QWidget):
     def create_dropdowns(self):
         """Create and configure dropdown menus"""
         self.map_dropdown = QComboBox(self)
-        input_files = [
-            f for f in os.listdir(".") if f.endswith(".txt") and "input" in f
-        ]
-        self.map_dropdown.addItems(input_files)
+        self.update_map_dropdown()
         self.map_dropdown.currentIndexChanged.connect(self.update_map)
 
         self.algorithm_dropdown = QComboBox(self)
@@ -1061,6 +1063,9 @@ class App(QWidget):
 
     def create_buttons(self):
         """Create control buttons"""
+        self.reload_maps_button = QPushButton("Reload all maps", self)
+        self.reload_maps_button.clicked.connect(self.update_map_dropdown)
+
         self.solve_button = QPushButton("Solve Map!", self)
         self.solve_button.clicked.connect(self.run_solver)
 
@@ -1102,6 +1107,7 @@ class App(QWidget):
     def create_top_layout(self):
         """Create top control layout"""
         layout = QHBoxLayout()
+        layout.addWidget(self.reload_maps_button)
         layout.addWidget(self.map_dropdown)
         layout.addWidget(self.algorithm_dropdown)
         layout.addWidget(self.solve_button)
@@ -1142,7 +1148,8 @@ class App(QWidget):
         if not map_file:
             return
 
-        self.io_handler.set_input_file_name(map_file)
+        new_map_file = os.path.join("new_input", map_file)
+        self.io_handler.set_input_file_name(new_map_file)
         self.maze, self.rock_weights = self.io_handler.parse()
         self.visualizer.change_map(self.maze, self.rock_weights)
         self.reset_ui_state()
@@ -1231,6 +1238,16 @@ class App(QWidget):
     # endregion
 
     # region App UI Helpers
+    def update_map_dropdown(self):
+        """Update map dropdown with available input files"""
+        input_files = [
+            f for f in os.listdir("./new_input") if f.endswith(".txt") and "input" in f
+        ]
+        self.map_dropdown.clear()
+        self.map_dropdown.addItems(input_files)
+        if self.is_initialized:
+            self.reset_ui_state()
+
     def update_status_labels(self, steps, cost):
         """Update status display values"""
         self.steps_label.setText(f"Steps: {steps}")
@@ -1267,6 +1284,7 @@ class App(QWidget):
         self.solve_button.setEnabled(enable_start)
         self.map_dropdown.setEnabled(enable_start)
         self.algorithm_dropdown.setEnabled(enable_start)
+        self.reload_maps_button.setEnabled(enable_start)
 
     def change_speed(self, fps):
         """Update visualization speed"""

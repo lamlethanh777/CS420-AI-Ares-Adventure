@@ -1,0 +1,5 @@
+1. Simple Case with One Stone and Target, Few Obstacles:
+
+Objective: Test basic efficiency, step count, and node generation differences for each algorithm.
+Expected Insight: BFS and DFS might generate excessive nodes, UCS and A* should be optimal.
+Actual results: DFS and A* <<, while BFS and UCS >>
