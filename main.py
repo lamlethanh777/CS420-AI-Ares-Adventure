@@ -22,6 +22,7 @@ import time
 import tracemalloc
 from line_profiler import profile
 from munkres import Munkres
+from scipy.optimize import linear_sum_assignment
 
 
 # region IO Handler
@@ -63,6 +64,7 @@ class Environment:
         self.goals = self.find_goals(maze)
         self.initial_rocks_map = self.find_rocks(maze, rock_weights)
         self.unreachable_positions = self.find_unreachable_positions(maze)
+        self.unreachable_pairs = self.find_unreachable_pairs(maze)
         self.maze = self.get_map_wall(maze)
 
     def find_player(self, maze: list[str]):
@@ -133,9 +135,73 @@ class Environment:
                             maze[prev_box_x][prev_box_y] != "#"
                             and maze[player_x][player_y] != "#"
                         ):
-
                             queue.append((prev_box_x, prev_box_y))
+
         return all_positions - reachable_positions
+
+    # function to find pairs of goals and their unreachable positions
+    def find_unreachable_pairs(self, maze: list[str]):
+        """
+        For every goal square, perform reverse BFS by pulling the box from the goal to every possible square.
+        """
+        height = len(maze)
+        width = [len(row) for row in maze]
+
+        all_positions = set()
+        walls = set()
+        for i, row in enumerate(maze):
+            for j, cell in enumerate(row):
+                if cell == "#":
+                    walls.add((i, j))
+                else:
+                    all_positions.add((i, j))
+
+        unreachable_pairs = {}
+        for goal in self.goals:
+            unreachable_pairs[goal] = set()
+            visited = set()
+            queue = [goal]
+
+            while queue:
+                box_pos = queue.pop(0)
+                if box_pos in visited:
+                    continue
+                visited.add(box_pos)
+                unreachable_pairs[goal].add(box_pos)
+                x, y = box_pos
+                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    prev_box_x, prev_box_y = x - dx, y - dy
+                    player_x, player_y = x - 2 * dx, y - 2 * dy
+
+                    if (
+                        0 <= prev_box_x < height
+                        and 0 <= prev_box_y < width[x]
+                        and 0 <= player_x < height
+                        and 0 <= player_y < width[x]
+                    ):
+
+                        if (
+                            maze[prev_box_x][prev_box_y] != "#"
+                            and maze[player_x][player_y] != "#"
+                        ):
+                            queue.append((prev_box_x, prev_box_y))
+
+        for goal, unreachable in unreachable_pairs.items():
+            unreachable_pairs[goal] = all_positions - unreachable
+
+        for k, v in unreachable_pairs.items():
+            maze = self.get_map_wall(maze).copy()
+            maze[k[0]] = maze[k[0]][: k[1]] + "*" + maze[k[0]][k[1] + 1 :]
+            for pos in v:
+                if pos != k:
+                    maze[pos[0]] = (
+                        maze[pos[0]][: pos[1]] + "0" + maze[pos[0]][pos[1] + 1 :]
+                    )
+            for line in maze:
+                print(line)
+            print("\n")
+
+        return unreachable_pairs
 
     def get_map_wall(self, maze: list[str]):
         return [
@@ -545,13 +611,12 @@ class AStarSolver(Solver):
         node = Node(self.problem.initial)
 
         frontier = []
-        reached = {}  # combined cost of reaching the node and heuristic cost
         heuristic = {}
+        closed = set()
         self.nodes_generated = 1
 
-        heapq.heappush(frontier, (0, node))
         heuristic[node.state] = self.heuristic_cost(node.state)
-        reached[node.state] = heuristic[node.state]
+        heapq.heappush(frontier, (heuristic[node.state], node))
 
         while frontier and not self.should_stop:
             _, node = heapq.heappop(frontier)
@@ -560,41 +625,39 @@ class AStarSolver(Solver):
             if self.problem.is_goal(state):
                 return self.trace_path(node)
 
+            if state in closed:
+                continue
+            closed.add(state)
+
             for action, movement in self.problem.actions:
                 child_state, rock_moved, moving_cost = self.problem.result(
-                    node.state, movement
+                    state, movement
                 )
-                if child_state is None:
+                if child_state is None or child_state in closed:
                     continue
-
-                is_child_reached_before = child_state in reached
-                if not is_child_reached_before:
-                    h = self.heuristic_cost(child_state)
-                    heuristic[child_state] = h
+                if child_state in heuristic:
+                    heuristic_cost = heuristic[child_state]
                 else:
-                    h = heuristic[child_state]
+                    heuristic_cost = self.heuristic_cost(child_state)
+                    heuristic[child_state] = heuristic_cost
 
-                child_combined_cost = node.path_cost + moving_cost + h
-
-                if (
-                    not is_child_reached_before
-                    or reached[child_state] > child_combined_cost
-                ):
-                    child_node = Node(
-                        child_state,
-                        node,
-                        action.upper() if rock_moved else action,
-                        child_combined_cost - h,
-                    )
-                    reached[child_state] = child_combined_cost
-                    heapq.heappush(frontier, (child_combined_cost, child_node))
-                    self.nodes_generated += 1
+                new_cost = node.path_cost + moving_cost
+                priority = new_cost + heuristic_cost
+                child_node = Node(
+                    child_state,
+                    node,
+                    action.upper() if rock_moved else action,
+                    new_cost,
+                )
+                heapq.heappush(frontier, (priority, child_node))
+                self.nodes_generated += 1
 
         return None
 
+    @profile
     def heuristic_cost(self, state: State):
         """
-        Calculate the heuristic cost for the given state.
+        Calculate the heuristic cost for the given state using scipy.optimize.linear_sum_assignment.
 
         Args:
             state (State): The current state of the game, including the maze layout and positions of rocks and goals.
@@ -602,80 +665,35 @@ class AStarSolver(Solver):
         Returns:
             int: The heuristic cost based on the distance of rocks to their closest goals, weighted by the rock weights.
         """
-        # # Get rock positions and their weights
-        # rock_positions = list(state.rocks_map.keys())
-        # rock_weights = [state.rocks_map[pos] for pos in rock_positions]
 
-        # # Get goal positions
-        # goal_positions = self.problem.environment.goals
+        # Get rock positions and their weights
+        rocks_list = list(state.rocks_map.items())
 
-        # # Create cost matrix
-        # cost_matrix = []
-        # for i, rock_pos in enumerate(rock_positions):
-        #     row = []
-        #     for goal_pos in goal_positions:
-        #         # Calculate Manhattan distance multiplied by rock weight
-        #         distance = abs(rock_pos[0] - goal_pos[0]) + abs(
-        #             rock_pos[1] - goal_pos[1]
-        #         )
-        #         cost = distance * (rock_weights[i] + 1)
-        #         row.append(cost)
-        #     cost_matrix.append(row)
+        # Get goal positions
+        goal_positions = self.problem.environment.goals
+        unreachable_pairs = self.problem.environment.unreachable_pairs
 
-        # # Apply Munkres algorithm to find minimum total cost matching
-        # m = Munkres()
-        # indexes = m.compute(cost_matrix)
+        # Create cost matrix using list comprehension for efficiency
+        cost_matrix = [
+            [
+                (
+                    1000000
+                    if rock_pos in unreachable_pairs.get(goal_pos, set())
+                    else (
+                        abs(rock_pos[0] - goal_pos[0]) + abs(rock_pos[1] - goal_pos[1])
+                    )
+                    * (weight + 1)
+                )
+                for rock_pos, weight in rocks_list
+            ]
+            for goal_pos in goal_positions
+        ]
 
-        # # Sum the costs of the optimal assignments
-        # return sum(cost_matrix[row][column] for row, column in indexes)
-        # Calculate the sum of Manhattan distances between rocks and goals and the distance from the player to the closest rock
-        # return sum(
-        #     (
-        #         min(
-        #             abs(rock_pos[0] - goal_pos[0]) + abs(rock_pos[1] - goal_pos[1])
-        #             for goal_pos in self.problem.environment.goals
-        #         )
-        #         + 1
-        #     )
-        #     * (weight + 1)
-        #     for rock_pos, weight in state.rocks_map.items()
-        # ) + min(
-        #     abs(rock_pos[0] - state.player_pos[0])
-        #     + abs(rock_pos[1] - state.player_pos[1])
-        #     for rock_pos in state.rocks_map
-        # )
-        heuristic = 0
-        goals = self.problem.environment.goals
-        maze = self.problem.environment.maze
-        rocks = sorted(state.rocks_map.items(), key=lambda x: x[1], reverse=True)
-        used_goals = set()
+        # Apply linear_sum_assignment to find minimum total cost matching
+        row_ind, col_ind = linear_sum_assignment(cost_matrix)
 
-        for rock_pos, rock_weight in rocks:
-            min_distance = float("inf")
-            closest_goal = None
-
-            if maze[rock_pos[0]][rock_pos[1]] == ".":
-                used_goals.add(rock_pos)
-                continue
-
-            for goal in goals:
-                if goal not in used_goals:
-                    distance = abs(rock_pos[0] - goal[0]) + abs(rock_pos[1] - goal[1])
-                    if distance < min_distance:
-                        min_distance = distance
-                        closest_goal = goal
-
-            if closest_goal:
-                used_goals.add(closest_goal)
-                heuristic += min_distance * (rock_weight + 1)
-
-        heuristic += min(
-            abs(rock_pos[0] - state.player_pos[0])
-            + abs(rock_pos[1] - state.player_pos[1])
-            for rock_pos in state.rocks_map
-        )
-
-        return heuristic  # *1.2-1.6
+        # Sum the costs of the optimal assignments
+        return sum(cost_matrix[row_ind[i]][col_ind[i]] for i in range(len(row_ind)))
 
 
 # endregion

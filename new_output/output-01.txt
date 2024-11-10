@@ -73,3 +73,9 @@ ddrrdrrrrUUUUUruLLLLLLL
 DFS
 Steps: 403, Cost: 2303, Node: 2282, Time (ms): 39.91, Memory (MB): 1.30
 rrrrrrrrdddllluRdrUruLLrrddllllllllluurrrrrurDrdLrrruulllldlddrUUrrrrddllllllllluurrrurRRRddrruuLrdddlluuUrrdddllllllllluurrrrruurRdrUruLLrrdddddllllllllluurrrrrruulllllluurrrrrrDrdLLrrrrddddllllllllluurrrruUrrrrrddddllllllllluurruulluurrrrDDrdLrrrrrdddllllllllluurrrUrrrrrrdddllllllllluuruururDDrdLrrrrrrddllllllllluururDrdLrrrrrrruulllllllldlddrUUrrrrrrrruullllllllldRdrUruLLrrrrrrrrddddllllllllluuuUU
+A*
+Steps: 23, Cost: 623, Node: 669, Time (ms): 40.33, Memory (MB): 0.32
+rrrdrddrrUUUUUruLLLLLLL
+UCS
+Steps: 23, Cost: 623, Node: 3539, Time (ms): 93.88, Memory (MB): 1.75
+ddrrdrrrrUUUUUruLLLLLLL

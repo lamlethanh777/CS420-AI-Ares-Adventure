@@ -49,3 +49,12 @@ No solution found.
 DFS
 Steps: 122, Cost: 140, Node: 432, Time (ms): 6.14, Memory (MB): 0.25
 rrrrrrrrruullulululldlluLrrrrrrrrdrdddddllllllllllluurruulluuRRRRRRRRRurDDrdddddllllllllllluurruulluurrrrrrrrddrRurDDDDldR
+UCS
+Steps: 26, Cost: 42, Node: 3303, Time (ms): 75.81, Memory (MB): 1.66
+uuuluuRRRRRRRRurDDDDDDldRR
+A*
+Steps: 26, Cost: 42, Node: 633, Time (ms): 37.25, Memory (MB): 0.29
+uuluuuRRRRRRRRurDDDDDDldRR
+A*
+Steps: 26, Cost: 42, Node: 633, Time (ms): 22.85, Memory (MB): 0.29
+uuluuuRRRRRRRRurDDDDDDldRR
