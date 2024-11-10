@@ -1,5 +1,14 @@
-1. Simple Case with One Stone and Target, Few Obstacles:
-
-Objective: Test basic efficiency, step count, and node generation differences for each algorithm.
+1. Simple Case with One-two Stones and Targets, Few Obstacles, Medium Maze :
 Expected Insight: BFS and DFS might generate excessive nodes, UCS and A* should be optimal.
 Actual results: DFS and A* <<, while BFS and UCS >>
+
+2. Simple case with One-two Stones and Targets, Few Obstacles, Small maze: (input-weighted_10.txt, input-weighted_100.txt, intput-weighted_2.txt )
+Expected Insight: 4 search algo perform in the same speed. BFS and DFS have solution cost slightly different
+comparing to UCS and A* due to limited space movement => no redundant movement performed by DFS and BFS.
+Actual results: BFS ~ DFS ~ UCS ~ A* (time and cost), DFS generate the least nodes.
+3. Medium-Hard case with Two-Three Stones and Targets, Many Obstacles, Medium, Dense, Narrowed Maze:
+Expected Insight: DFS fall into redundant path and the total cost excessive UCS and A*. BFS slightly
+slower. A* achieve best performance. (input-weighted_106)
+4. Special case consider factors that affect on these metrics (number of nodes, run time, memory used:
+  - Weight of rocks: The weight value assigned each rocks. We will examine two levels treat likely the same environment and initial state except the weight values contribution to rocks. We will show that the different in weight between rocks affects alot in efficiency of the search.
+  
