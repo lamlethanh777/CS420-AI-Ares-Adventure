@@ -23,6 +23,10 @@ import tracemalloc
 from line_profiler import profile
 from munkres import Munkres
 from scipy.optimize import linear_sum_assignment
+from collections import deque
+
+
+BIG_NUMBER = 999999
 
 
 # region IO Handler
@@ -64,7 +68,7 @@ class Environment:
         self.goals = self.find_goals(maze)
         self.initial_rocks_map = self.find_rocks(maze, rock_weights)
         self.unreachable_positions = self.find_unreachable_positions(maze)
-        self.unreachable_pairs = self.find_unreachable_pairs(maze)
+        self.distance_matrices = self.find_distance_matrices(maze)
         self.maze = self.get_map_wall(maze)
 
     def find_player(self, maze: list[str]):
@@ -100,12 +104,9 @@ class Environment:
         width = [len(row) for row in maze]
 
         all_positions = set()
-        walls = set()
         for i, row in enumerate(maze):
             for j, cell in enumerate(row):
-                if cell == "#":
-                    walls.add((i, j))
-                else:
+                if cell != "#":
                     all_positions.add((i, j))
 
         reachable_positions = set()
@@ -126,9 +127,9 @@ class Environment:
 
                     if (
                         0 <= prev_box_x < height
-                        and 0 <= prev_box_y < width[x]
+                        and 0 <= prev_box_y < width[prev_box_x]
                         and 0 <= player_x < height
-                        and 0 <= player_y < width[x]
+                        and 0 <= player_y < width[player_x]
                     ):
 
                         if (
@@ -138,70 +139,59 @@ class Environment:
                             queue.append((prev_box_x, prev_box_y))
 
         return all_positions - reachable_positions
-
-    # function to find pairs of goals and their unreachable positions
-    def find_unreachable_pairs(self, maze: list[str]):
+    
+    def find_distance_matrices(self, maze: list[str]):
         """
         For every goal square, perform reverse BFS by pulling the box from the goal to every possible square.
+
+        Returns:
+        distance_matrices: dict with keys as goal positions and values as 2D arrays of distances
         """
         height = len(maze)
         width = [len(row) for row in maze]
 
-        all_positions = set()
-        walls = set()
-        for i, row in enumerate(maze):
-            for j, cell in enumerate(row):
-                if cell == "#":
-                    walls.add((i, j))
-                else:
-                    all_positions.add((i, j))
-
-        unreachable_pairs = {}
+        # Initialize distance matrices for each goal
+        distance_matrices = {}
         for goal in self.goals:
-            unreachable_pairs[goal] = set()
+            # Create a 2D array initialized with -1
+            distance_matrix = [[BIG_NUMBER] * width[h] for h in range(height)]
+
             visited = set()
-            queue = [goal]
+            queue = [(goal, 0)]  # (x, y, distance)
 
             while queue:
-                box_pos = queue.pop(0)
+                box_pos, distance = queue.pop(0)
+
                 if box_pos in visited:
                     continue
                 visited.add(box_pos)
-                unreachable_pairs[goal].add(box_pos)
+
                 x, y = box_pos
+                # Update the distance in the matrix
+                distance_matrix[x][y] = distance
+
                 for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                     prev_box_x, prev_box_y = x - dx, y - dy
                     player_x, player_y = x - 2 * dx, y - 2 * dy
 
                     if (
                         0 <= prev_box_x < height
-                        and 0 <= prev_box_y < width[x]
+                        and 0 <= prev_box_y < width[prev_box_x]
                         and 0 <= player_x < height
-                        and 0 <= player_y < width[x]
+                        and 0 <= player_y < width[player_x]
                     ):
-
                         if (
                             maze[prev_box_x][prev_box_y] != "#"
                             and maze[player_x][player_y] != "#"
                         ):
-                            queue.append((prev_box_x, prev_box_y))
+                            queue.append(((prev_box_x, prev_box_y), distance + 1))
+            distance_matrices[goal] = distance_matrix
 
-        for goal, unreachable in unreachable_pairs.items():
-            unreachable_pairs[goal] = all_positions - unreachable
-
-        for k, v in unreachable_pairs.items():
-            maze = self.get_map_wall(maze).copy()
-            maze[k[0]] = maze[k[0]][: k[1]] + "*" + maze[k[0]][k[1] + 1 :]
-            for pos in v:
-                if pos != k:
-                    maze[pos[0]] = (
-                        maze[pos[0]][: pos[1]] + "0" + maze[pos[0]][pos[1] + 1 :]
-                    )
-            for line in maze:
-                print(line)
-            print("\n")
-
-        return unreachable_pairs
+        for goal, matrix in distance_matrices.items():
+            print(f"Goal: {goal}")
+            for line in matrix:
+                print("".join([str(cell).rjust(3) for cell in line]))
+        return distance_matrices
 
     def get_map_wall(self, maze: list[str]):
         return [
@@ -418,6 +408,7 @@ class Solver:
     def solve_and_measure(self, problem: Problem):
         self.change_problem(problem)
         self.start_timer()
+        print("Solving...")
         result = self.solve()
         self.result = "".join(result) if result is not None else None
         self.stop_timer()
@@ -671,19 +662,13 @@ class AStarSolver(Solver):
 
         # Get goal positions
         goal_positions = self.problem.environment.goals
-        unreachable_pairs = self.problem.environment.unreachable_pairs
+        # unreachable_pairs = self.problem.environment.unreachable_pairs
+        distance_matrices = self.problem.environment.distance_matrices
 
         # Create cost matrix using list comprehension for efficiency
         cost_matrix = [
             [
-                (
-                    1000000
-                    if rock_pos in unreachable_pairs.get(goal_pos, set())
-                    else (
-                        abs(rock_pos[0] - goal_pos[0]) + abs(rock_pos[1] - goal_pos[1])
-                    )
-                    * (weight + 1)
-                )
+                distance_matrices[goal_pos][rock_pos[0]][rock_pos[1]] * (weight + 1)
                 for rock_pos, weight in rocks_list
             ]
             for goal_pos in goal_positions
@@ -852,7 +837,6 @@ class SokobanVisualizer(QWidget):
             self.tile_size = 10
         else:
             self.tile_size = tile_size
-        print(tile_size)
 
         self.setMinimumSize(self.width * self.tile_size, self.height * self.tile_size)
         self.update_player_direction("d")
@@ -1177,26 +1161,26 @@ class App(QWidget):
         """Execute selected solver algorithm"""
         algorithm = self.algorithm_dropdown.currentText()
 
-        try:
-            solver = self.solvers[algorithm]
+        # try:
+        solver = self.solvers[algorithm]
 
-            # Show progress dialog with indeterminate progress bar
-            self.progress_dialog = QProgressDialog(
-                "Running solver, please wait...", None, 0, 0, self
-            )
-            self.progress_dialog.setWindowTitle("Solving")
-            self.progress_dialog.show()
+        # Show progress dialog with indeterminate progress bar
+        self.progress_dialog = QProgressDialog(
+            "Running solver, please wait...", None, 0, 0, self
+        )
+        self.progress_dialog.setWindowTitle("Solving")
+        self.progress_dialog.show()
 
-            # Connect the 'canceled' and 'rejected' signals
-            self.progress_dialog.canceled.connect(self.stop_solver)
+        # Connect the 'canceled' and 'rejected' signals
+        self.progress_dialog.canceled.connect(self.stop_solver)
 
-            # Run the solver in a separate thread
-            problem = Problem(Environment(self.maze, self.rock_weights))
-            self.solver_thread = SolverThread(solver, problem)
-            self.solver_thread.finished.connect(self.on_solver_finished)
-            self.solver_thread.start()
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Solver failed: {str(e)}")
+        # Run the solver in a separate thread
+        problem = Problem(Environment(self.maze, self.rock_weights))
+        self.solver_thread = SolverThread(solver, problem)
+        self.solver_thread.finished.connect(self.on_solver_finished)
+        self.solver_thread.start()
+        # except Exception as e:
+        #     QMessageBox.critical(self, "Error", f"Solver failed: {str(e)}")
 
     def stop_solver(self):
         """Called when the solver is stopped manually"""

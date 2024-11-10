@@ -94,15 +94,10 @@ def main():
     # Example usage:
     solvers = [DFSolver(), BFSolver(), UCSolver(), AStarSolver()]
     map_files = [
-        "input-01.txt",
-        "input-02.txt",
-        "input-03.txt",
-        "input-04.txt",
-        "input-05.txt",
-        "input-06.txt",
-        "input-07.txt",
-        "input-08.txt",
-        "input-10.txt",
+        "new_input/input-01.txt",
+        "new_input/input-02.txt",
+        "new_input/input-04.txt",
+        "new_input/input-07.txt",
     ]  # Replace with actual map file paths
     epochs = 1
     run_tests(solvers, map_files, epochs)

@@ -115,3 +115,24 @@ lluurDuurrrdddllLulllddrrdrUlUUruurrrdddllLrrruulDuullddlDrrRurrrddlldlUrUUluull
 UCS
 Steps: 96, Cost: 196, Node: 3504298, Time (ms): 133920.36, Memory (MB): 1886.53
 rruulDuullldddrrRurrrddlldlUrUUluulldlddrrRllluurDuurrddrDllLulllddrrdrUlUUruurrrDlddlLulDruuulD
+A*
+Steps: 96, Cost: 196, Node: 1201732, Time (ms): 207479.94, Memory (MB): 614.03
+lluurDuurrrdddllLulllddrrdrUlUUruurrrdddllLrrruulDuullddlDrrRurrrddlldlUrUUluulllDrddrRurDuluurD
+A*
+Steps: 96, Cost: 196, Node: 1201732, Time (ms): 101812.41, Memory (MB): 613.93
+lluurDuurrrdddllLulllddrrdrUlUUruurrrdddllLrrruulDuullddlDrrRurrrddlldlUrUUluulllDrddrRurDuluurD
+A*
+Steps: 96, Cost: 196, Node: 705936, Time (ms): 54601.77, Memory (MB): 360.91
+lluurDuurrdrddllLulllddrrdrUlUUruurrrdddllLuuurrdDuullddlDrrRurrrddlldlUrUUluulllDrddrRurDluuurD
+A*
+Steps: 96, Cost: 196, Node: 705936, Time (ms): 54043.63, Memory (MB): 360.91
+lluurDuurrdrddllLulllddrrdrUlUUruurrrdddllLuuurrdDuullddlDrrRurrrddlldlUrUUluulllDrddrRurDluuurD
+A*
+Steps: 96, Cost: 196, Node: 705936, Time (ms): 47187.41, Memory (MB): 360.91
+lluurDuurrdrddllLulllddrrdrUlUUruurrrdddllLuuurrdDuullddlDrrRurrrddlldlUrUUluulllDrddrRurDluuurD
+A*
+Steps: 96, Cost: 1680, Node: 106699, Time (ms): 7376.16, Memory (MB): 60.64
+lluurDuurrrdddllLulllddrrdrUlUUruurrrdddllLrrruulDuullddlDrrRurrrddlldlUrUUluulllDrddrRurDuluurD
+A*
+Steps: 96, Cost: 1680, Node: 106699, Time (ms): 7364.00, Memory (MB): 60.64
+lluurDuurrrdddllLulllddrrdrUlUUruurrrdddllLrrruulDuullddlDrrRurrrddlldlUrUUluulllDrddrRurDuluurD

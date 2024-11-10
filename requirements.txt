@@ -4,3 +4,4 @@ dict_hash
 munkres
 mathplotlib
 numpy
+scipy
